@@ -1,4 +1,5 @@
-import { signal } from "@preact/signals";
+import { computed, signal } from "@preact/signals";
+import { healthClock } from "../store/uiState";
 import {
   activateEstop,
   applyRemoteExecutionState,
@@ -24,8 +25,8 @@ export type BackendLogEntry = {
   text: string;
 };
 
-const STORAGE_KEY = "silverhand.robot_ws_url";
-const DEFAULT_URL = (import.meta.env as { VITE_ROBOT_WS_URL?: string }).VITE_ROBOT_WS_URL ?? "ws://192.168.20.5:8765";
+const STORAGE_KEY = "rukahod.arm_ws_url";
+const DEFAULT_URL = (import.meta.env as { VITE_ARM_WS_URL?: string }).VITE_ARM_WS_URL ?? `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:8765`;
 const HEARTBEAT_INTERVAL_MS = 3000;
 const RECONNECT_INTERVAL_MS = 30000;
 
@@ -35,6 +36,13 @@ export const robotConnectionError = signal("");
 export const robotConnectionServerName = signal("");
 export const robotConnectionGroups = signal<RobotGroupName[]>([]);
 export const robotLastMessageTs = signal<number | null>(null);
+export const armJointStateAt = signal<number | null>(null);
+export const armTelemetryReady = computed(() =>
+  robotConnectionState.value === "connected" &&
+  robotConnectionGroups.value.includes("arm") &&
+  armJointStateAt.value !== null &&
+  healthClock.value - armJointStateAt.value < 5000,
+);
 export const robotBackendStatus = signal("");
 export const robotBackendLog = signal<BackendLogEntry[]>([]);
 
@@ -71,6 +79,8 @@ export function connectRobot() {
   clearReconnectTimer();
   manuallyDisconnected = false;
   robotConnectionState.value = "connecting";
+  robotConnectionGroups.value = [];
+  armJointStateAt.value = null;
   robotConnectionError.value = "";
   robotBackendStatus.value = "Подключение к роботу...";
 
@@ -79,7 +89,7 @@ export function connectRobot() {
       clearReconnectTimer();
       robotConnectionState.value = "connected";
       robotConnectionError.value = "";
-      setConnectionReady(true);
+      setConnectionReady(false);
       pushBackendLog("info", `WS подключён: ${url}`);
       sendHello();
       startHeartbeat();
@@ -87,6 +97,8 @@ export function connectRobot() {
     onClose: () => {
       stopHeartbeat();
       setConnectionReady(false);
+      armJointStateAt.value = null;
+      robotConnectionGroups.value = [];
       robotConnectionState.value = manuallyDisconnected ? "disconnected" : "error";
       if (!manuallyDisconnected) {
         robotConnectionError.value = "Соединение закрыто.";
@@ -100,6 +112,7 @@ export function connectRobot() {
       robotConnectionState.value = "error";
       robotConnectionError.value = "Ошибка websocket.";
       setConnectionReady(false);
+      armJointStateAt.value = null;
       pushBackendLog("error", "Ошибка websocket.");
       if (!manuallyDisconnected) {
         scheduleReconnect();
@@ -118,8 +131,11 @@ export function disconnectRobot(manual = true) {
   client?.disconnect();
   client = null;
   setConnectionReady(false);
+  armJointStateAt.value = null;
+  robotConnectionGroups.value = [];
   if (manual) {
     robotConnectionState.value = "disconnected";
+    robotConnectionError.value = "";
     robotBackendStatus.value = "WS отключён.";
   }
 }
@@ -290,6 +306,10 @@ function handleRobotMessage(message: RobotProtocolMessage) {
     case "pong":
       return;
     case "joint_state":
+      if (message.payload.group_name === "arm") {
+        armJointStateAt.value = Date.now();
+        setConnectionReady(true);
+      }
       queueRemoteJointState(message.payload.group_name, message.payload.name, message.payload.position_rad);
       return;
     case "planning_state":
@@ -304,6 +324,8 @@ function handleRobotMessage(message: RobotProtocolMessage) {
       setFault(message.payload.active);
       if (message.payload.active) {
         robotConnectionError.value = message.payload.message;
+      } else {
+        robotConnectionError.value = "";
       }
       pushBackendLog(message.payload.severity === "error" ? "error" : message.payload.severity === "warning" ? "warn" : "info", `Fault: ${message.payload.message}`);
       return;
@@ -370,8 +392,8 @@ function queueRemoteJointState(groupName: RobotGroupName, jointNames: string[], 
 function sendHello() {
   client?.send("hello", {
     protocol_version: ROBOT_PROTOCOL_VERSION,
-    client_name: "silverhand_arm_teleop_ui",
-    requested_groups: ["arm", "gripper"],
+    client_name: "rukahod_operator_ui",
+    requested_groups: ["arm"],
   });
 }
 
@@ -393,7 +415,7 @@ function stopHeartbeat() {
 
 function readInitialUrl() {
   const saved = localStorage.getItem(STORAGE_KEY)?.trim();
-  if (!saved || saved === "ws://127.0.0.1:8765" || saved === "ws://localhost:8765") {
+  if (!saved) {
     localStorage.setItem(STORAGE_KEY, DEFAULT_URL);
     return DEFAULT_URL;
   }

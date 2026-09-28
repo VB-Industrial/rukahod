@@ -18,6 +18,7 @@ import {
   toggleHeadlightsFromUi,
   toggleStopModeFromUi,
 } from "../transport/robotConnectionStore";
+import { settingsOpen } from "../../store/uiState";
 
 const pressedKeys = new Set<string>();
 let animationFrame = 0;
@@ -43,6 +44,10 @@ const PREFERRED_GAMEPAD_IDS = ["pxn", "2113", "litestar"];
 
 export function initializeInputController(): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
+    const target = event.target;
+    if (settingsOpen.value || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable)) {
+      return;
+    }
     if (event.repeat) {
       return;
     }
@@ -138,6 +143,14 @@ export function initializeInputController(): () => void {
 
   const tick = () => {
     animationFrame = window.requestAnimationFrame(tick);
+    if (settingsOpen.value) {
+      pressedKeys.clear();
+      if (hasActiveCommand()) {
+        stopCommand();
+        void sendCmdVelToRobot();
+      }
+      return;
+    }
     updateFromKeyboard();
     updateFromGamepad();
   };

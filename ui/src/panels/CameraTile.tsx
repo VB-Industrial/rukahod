@@ -66,8 +66,6 @@ function placeholderTone(state: typeof cameraStates.value[CameraId]): string {
       return "driver";
     case "wrist":
       return "wrist";
-    case "auxiliary":
-      return state.enabled ? "online" : "offline";
     default:
       return "offline";
   }

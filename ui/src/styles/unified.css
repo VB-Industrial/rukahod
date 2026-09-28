@@ -13,6 +13,21 @@ body {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.rukahod-shell .settings-toggle {
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.rukahod-shell .settings-toggle.is-active {
+  border-color: var(--accent);
+  background: rgba(214, 168, 72, .12);
+}
+
+.rukahod-shell .settings-toggle:hover {
+  border-color: var(--accent);
+}
+
 .unified-workspace {
   display: grid;
   grid-template-rows: minmax(0, 1fr) minmax(292px, .5fr);
@@ -31,8 +46,172 @@ body {
   min-height: 0;
 }
 
-.unified-cameras > .camera-card {
+.top-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.top-stage .unified-cameras {
+  width: 100%;
+  height: 100%;
+}
+
+.top-stage .unified-cameras.settings-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.service-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: auto;
+  padding: clamp(10px, .8vw, 16px);
+}
+
+.service-stage-heading h2 {
+  margin: 0 0 3px;
+  font-size: clamp(16px, 1vw, 20px);
+}
+
+.service-stage-heading p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap);
+  align-items: stretch;
+}
+
+.service-card {
+  min-width: 0;
+  padding: clamp(10px, .8vw, 14px);
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.service-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.service-card-head h2 {
+  margin: 0;
+  font-size: clamp(14px, .9vw, 18px);
+}
+
+.service-state {
+  color: var(--accent);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.service-state.is-ready { color: var(--good); }
+.service-state.is-error,
+.service-error { color: #ff9187; }
+
+.service-field {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.service-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: #11161c;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.service-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.service-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.service-facts strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.service-error {
+  margin: 0;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.service-log {
+  min-height: 15px;
+  display: grid;
+  gap: 3px;
+  overflow-wrap: anywhere;
+}
+
+.service-log-entry { font-size: 10px; }
+
+.unified-cameras > .camera-slot {
+  min-width: 0;
+  min-height: 0;
+}
+
+.unified-cameras > .camera-slot > .camera-card {
   min-block-size: 0;
+}
+
+.unified-cameras.has-collapsed {
+  grid-template-columns: clamp(100px, 10vw, 170px) minmax(0, 1fr) clamp(100px, 10vw, 170px);
+}
+
+.unified-cameras.has-collapsed .is-primary {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.unified-cameras.has-collapsed .side-left {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.unified-cameras.has-collapsed .side-right {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.camera-slot.is-collapsed .camera-card {
+  justify-content: center;
+}
+
+.camera-slot.is-collapsed .camera-panel-head {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.camera-slot.is-collapsed .camera-head-copy {
+  flex: none;
 }
 
 .arm-controls {
@@ -139,6 +318,19 @@ body {
 
 .arm-controls .model-placeholder {
   min-height: 0;
+}
+
+.arm-controls .pose-readout {
+  bottom: 4px;
+  max-width: min(44%, 320px);
+}
+
+.arm-controls .pose-readout.current {
+  left: 4px;
+}
+
+.arm-controls .pose-readout.target {
+  right: 4px;
 }
 
 .rover-controls {
@@ -266,8 +458,20 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .unified-cameras > .camera-card {
+  .top-stage {
+    min-height: 460px;
+  }
+
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .unified-cameras > .camera-slot > .camera-card {
     min-height: 230px;
+  }
+
+  .unified-cameras.has-collapsed {
+    grid-template-columns: minmax(72px, 18%) minmax(0, 1fr) minmax(72px, 18%);
   }
 
   .arm-controls {

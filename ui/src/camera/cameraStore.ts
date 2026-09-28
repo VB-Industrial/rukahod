@@ -55,12 +55,23 @@ class CameraSessionController {
   private videoElement: HTMLVideoElement | null = null;
   private connectNonce = 0;
   private reconnectAttempt = 0;
+  private urlChangeNonce = 0;
 
   constructor(config: CameraConfig) {
     this.config = config;
   }
 
   attach(element: HTMLVideoElement | null): void {
+    if (!element) {
+      this.videoElement = null;
+      void this.disconnect();
+      this.setState({
+        status: this.getState().enabled ? (this.config.whepUrl ? "idle" : "unconfigured") : "disabled",
+        connectedAt: null,
+        lastFrameAt: null,
+      });
+      return;
+    }
     this.videoElement = element;
     if (this.videoElement) {
       this.videoElement.autoplay = true;
@@ -115,6 +126,26 @@ class CameraSessionController {
     this.clearReconnectTimer();
     this.reconnectAttempt = 0;
     void this.connect(true);
+  }
+
+  setUrl(url: string): void {
+    const changeNonce = ++this.urlChangeNonce;
+    this.config.whepUrl = url;
+    this.reconnectAttempt = 0;
+    void this.disconnect().then(() => {
+      if (changeNonce !== this.urlChangeNonce) return;
+      this.setState({
+        whepUrl: url,
+        status: !this.getState().enabled ? "disabled" : url ? "idle" : "unconfigured",
+        lastError: null,
+        reconnectAttempt: 0,
+        connectedAt: null,
+        lastFrameAt: null,
+      });
+      if (this.videoElement && this.getState().enabled && url) {
+        void this.connect(false);
+      }
+    });
   }
 
   private getState(): CameraState {
@@ -273,6 +304,15 @@ export function detachCameraElement(id: CameraId, element: HTMLVideoElement | nu
 
 export function reconnectCamera(id: CameraId): void {
   controllers[id].reconnectNow();
+}
+
+export function setCameraUrl(id: CameraId, url: string): void {
+  const nextUrl = url.trim();
+  if (nextUrl && !/^https?:\/\//i.test(nextUrl)) {
+    throw new Error("Адрес камеры должен начинаться с http:// или https://");
+  }
+  window.localStorage.setItem(`rukahod.camera.${id}.url`, nextUrl);
+  controllers[id].setUrl(nextUrl);
 }
 
 export function toggleCameraEnabled(id: CameraId): void {

@@ -6,6 +6,7 @@ import {
   resetState,
 } from "../store/appState";
 import { sendEstopToRobot, sendLockedTargetToRobot, sendResetEstopToRobot, sendStopToRobot } from "../transport/robotConnectionStore";
+import { armTelemetryReady } from "../transport/robotConnectionStore";
 
 export function ExecutePanel() {
   return (
@@ -15,7 +16,7 @@ export function ExecutePanel() {
       </div>
 
       <div className="execution-actions">
-        <button className="execute-action" disabled={!canExecute.value} onClick={sendLockedTargetToRobot} type="button">
+        <button className="execute-action" disabled={!canExecute.value || !armTelemetryReady.value} onClick={sendLockedTargetToRobot} type="button">
           Движение
         </button>
         <button className="secondary-action" disabled={!canStop.value} onClick={sendStopToRobot} type="button">

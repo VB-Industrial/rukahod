@@ -1,47 +1,34 @@
-import { appState, safetyState } from "../store/appState";
 import { cameraSummary } from "../camera/cameraStore";
-import { stateTone, translateState } from "../app/viewModel";
+import { safetyState as armSafety } from "../store/appState";
+import { healthClock, settingsOpen, toggleSettings } from "../store/uiState";
+import { armJointStateAt, robotConnectionState as armConnection, robotConnectionGroups as armGroups } from "../transport/robotConnectionStore";
+import { safetyState as roverSafety } from "../rover/store/appState";
+import { robotConnectionState as roverConnection, robotConnectionGroups as roverGroups, roverStateAt } from "../rover/transport/robotConnectionStore";
 
 export function HeaderBar() {
-  const cameraAccent =
-    cameraSummary.value.liveCount === 0
-      ? "red"
-      : cameraSummary.value.liveCount === cameraSummary.value.totalPrimary
-        ? "green"
-        : "amber";
-  const manipulatorStatus = safetyState.value.armReady ? "Готов" : "Не готов";
-  const manipulatorAccent = safetyState.value.armReady ? "green" : "amber";
+  const cameraCount = cameraSummary.value.liveCount;
+  const cameraTotal = cameraSummary.value.totalPrimary;
+  const armReady = armConnection.value === "connected" && armGroups.value.includes("arm") && armJointStateAt.value !== null && healthClock.value - armJointStateAt.value < 5000 && armSafety.value.noFaults;
+  const roverReady = roverConnection.value === "connected" && roverGroups.value.includes("rover") && roverStateAt.value !== null && healthClock.value - roverStateAt.value < 5000 && roverSafety.value.roverReady && roverSafety.value.noFaults;
+  const hasErrors = cameraSummary.value.hasErrors || armConnection.value === "error" || roverConnection.value === "error" || !armSafety.value.noFaults || !roverSafety.value.noFaults;
 
   return (
     <header className="topbar panel">
-      <div className="topbar-brand">
-        <h1>РукаХод</h1>
-      </div>
-
+      <div className="topbar-brand"><h1>РукаХод</h1></div>
       <div className="topbar-status">
-        <HeaderBadge label="Состояние" value={translateState(appState.value)} accent={stateTone(appState.value)} />
-        <HeaderBadge
-          label="Камеры"
-          value={`${cameraSummary.value.liveCount}/${cameraSummary.value.totalPrimary} live`}
-          accent={cameraAccent}
-        />
-        <HeaderBadge label="Манипулятор" value={manipulatorStatus} accent={manipulatorAccent} />
-        <HeaderBadge
-          label="Контроль"
-          value={safetyState.value.controlActive ? "Активен" : "Отключён"}
-          accent={safetyState.value.controlActive ? "green" : "red"}
-        />
-        <HeaderBadge label="Ошибки" value={safetyState.value.noFaults ? "Нет" : "Есть"} accent={safetyState.value.noFaults ? "green" : "red"} />
+        <HeaderBadge label="Камеры" value={`${cameraCount}/${cameraTotal} live`} accent={cameraCount === cameraTotal ? "green" : cameraCount === 0 ? "red" : "amber"} />
+        <HeaderBadge label="Манипулятор" value={armReady ? "Готов" : armConnection.value === "connected" ? "Ожидание руки" : "Нет связи"} accent={armReady ? "green" : armConnection.value === "error" ? "red" : "amber"} />
+        <HeaderBadge label="Ровер" value={roverReady ? "Готов" : roverConnection.value === "connected" ? "Ожидание ровера" : "Нет связи"} accent={roverReady ? "green" : roverConnection.value === "error" ? "red" : "amber"} />
+        <HeaderBadge label="Ошибки" value={hasErrors ? "Есть" : "Нет"} accent={hasErrors ? "red" : "green"} />
+        <button className={`header-badge settings-toggle ${settingsOpen.value ? "is-active" : ""}`} onClick={toggleSettings} aria-pressed={settingsOpen.value} type="button">
+          <span>Настройка</span>
+          <strong>{settingsOpen.value ? "К камерам" : "Открыть"}</strong>
+        </button>
       </div>
     </header>
   );
 }
 
-function HeaderBadge(props: { label: string; value: string; accent: "green" | "amber" | "red" | "blue" }) {
-  return (
-    <div className={`header-badge ${props.accent}`}>
-      <span>{props.label}</span>
-      <strong>{props.value}</strong>
-    </div>
-  );
+function HeaderBadge(props: { label: string; value: string; accent: "green" | "amber" | "red" }) {
+  return <div className={`header-badge ${props.accent}`}><span>{props.label}</span><strong>{props.value}</strong></div>;
 }

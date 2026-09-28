@@ -42,8 +42,8 @@ export type BackendLogEntry = {
   text: string;
 };
 
-const STORAGE_KEY = "silverhand.rover_ws_url";
-const DEFAULT_URL = (import.meta.env as { VITE_ROBOT_WS_URL?: string }).VITE_ROBOT_WS_URL ?? "ws://192.168.20.5:8766";
+const STORAGE_KEY = "rukahod.rover_ws_url";
+const DEFAULT_URL = (import.meta.env as { VITE_ROVER_WS_URL?: string }).VITE_ROVER_WS_URL ?? `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:8766`;
 const HEARTBEAT_INTERVAL_MS = 3000;
 const RECONNECT_INTERVAL_MS = 30000;
 
@@ -52,6 +52,7 @@ export const robotConnectionState = connectionState;
 export const robotConnectionServerName = signal("");
 export const robotConnectionGroups = signal<RobotGroupName[]>([]);
 export const robotLastMessageTs = signal<number | null>(null);
+export const roverStateAt = signal<number | null>(null);
 export const robotBackendStatus = signal("");
 export const robotBackendLog = signal<BackendLogEntry[]>([]);
 export const robotConnectionError = signal("");
@@ -86,6 +87,8 @@ export function connectRobot() {
   clearReconnectTimer();
   manuallyDisconnected = false;
   setConnectionState("connecting");
+  roverStateAt.value = null;
+  robotConnectionGroups.value = [];
   robotConnectionError.value = "";
   robotBackendStatus.value = "Подключение к rover gateway...";
 
@@ -102,6 +105,8 @@ export function connectRobot() {
     onClose: () => {
       stopHeartbeat();
       setLinkQuality("offline");
+      roverStateAt.value = null;
+      robotConnectionGroups.value = [];
       setConnectionState(manuallyDisconnected ? "disconnected" : "error");
       if (!manuallyDisconnected) {
         robotConnectionError.value = "Соединение закрыто.";
@@ -114,6 +119,7 @@ export function connectRobot() {
     onError: () => {
       setConnectionState("error");
       setLinkQuality("offline");
+      roverStateAt.value = null;
       robotConnectionError.value = "Ошибка websocket.";
       pushBackendLog("error", "Ошибка websocket.");
       if (!manuallyDisconnected) {
@@ -133,8 +139,11 @@ export function disconnectRobot(manual = true) {
   client?.disconnect();
   client = null;
   setLinkQuality("offline");
+  roverStateAt.value = null;
+  robotConnectionGroups.value = [];
   if (manual) {
     setConnectionState("disconnected");
+    robotConnectionError.value = "";
     robotBackendStatus.value = "WS отключён.";
   }
 }
@@ -258,6 +267,7 @@ function handleRobotMessage(message: RobotProtocolMessage) {
       setBattery(message.payload.percent, message.payload.voltage_v);
       return;
     case "rover_state":
+      roverStateAt.value = Date.now();
       setDriveMode(message.payload.mode);
       setRoverReady(message.payload.ready);
       setControlActive(message.payload.control_active);
@@ -269,6 +279,8 @@ function handleRobotMessage(message: RobotProtocolMessage) {
       setFault(message.payload.active);
       if (message.payload.active) {
         robotConnectionError.value = message.payload.message;
+      } else {
+        robotConnectionError.value = "";
       }
       pushBackendLog(
         message.payload.severity === "error" || message.payload.severity === "fatal" ? "error" : "warn",
@@ -283,7 +295,7 @@ function handleRobotMessage(message: RobotProtocolMessage) {
 function sendHello() {
   client?.send("hello", {
     protocol_version: ROBOT_PROTOCOL_VERSION,
-    client_name: "silverhand_rover_teleop_ui",
+    client_name: "rukahod_operator_ui",
     requested_groups: ["rover"],
   });
 }
@@ -326,7 +338,7 @@ function readInitialUrl(): string {
     return DEFAULT_URL;
   }
   const saved = window.localStorage.getItem(STORAGE_KEY)?.trim();
-  if (!saved || saved === "ws://127.0.0.1:8766" || saved === "ws://localhost:8766") {
+  if (!saved) {
     window.localStorage.setItem(STORAGE_KEY, DEFAULT_URL);
     return DEFAULT_URL;
   }
