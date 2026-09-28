@@ -1,6 +1,7 @@
 import { JOINT_LABELS } from "../app/viewModel";
 import { editingDisabled, interactionMode, previewTarget, setControlMode, setInteractionMode, updateJoint } from "../store/appState";
 import { SliderRow } from "../components/SliderRow";
+import { ARM_JOINT_NAMES, DEFAULT_JOINT_LIMITS_DEG } from "../kinematics";
 
 export function JointControlPanel() {
   return (
@@ -20,8 +21,8 @@ export function JointControlPanel() {
           <SliderRow
             key={JOINT_LABELS[index]}
             label={JOINT_LABELS[index]}
-            min={-180}
-            max={180}
+            min={DEFAULT_JOINT_LIMITS_DEG[ARM_JOINT_NAMES[index]].minDeg}
+            max={DEFAULT_JOINT_LIMITS_DEG[ARM_JOINT_NAMES[index]].maxDeg}
             step={1}
             unit="°"
             value={value}

@@ -2,12 +2,12 @@ import { ARM_JOINT_NAMES, type AnalyticIkCandidate, type BranchSelectionResult, 
 import { areJointLimitsSatisfied, DEFAULT_JOINT_LIMITS_DEG } from "./jointLimits";
 
 const DEFAULT_WEIGHTS: Record<(typeof ARM_JOINT_NAMES)[number], number> = {
-  arm_joint_1: 1,
-  arm_joint_2: 1,
-  arm_joint_3: 1,
-  arm_joint_4: 1,
-  arm_joint_5: 1,
-  arm_joint_6: 1,
+  joint_1: 1,
+  joint_2: 1,
+  joint_3: 1,
+  joint_4: 1,
+  joint_5: 1,
+  joint_6: 1,
 };
 
 export function selectBestSolution(

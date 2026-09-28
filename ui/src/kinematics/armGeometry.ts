@@ -9,8 +9,8 @@ export type PaperDhGeometry = {
 
 // This mapping is for the analytic IK formulas from course_paper_4-9.pdf
 // (pages 13-16). The values are inferred from the current URDF chain at zero pose.
-// They should be treated as the GUI preview geometry until the exact robot-side
-// analytic solver implementation is wired in.
+// This still describes the older SilverHand approximation. Recalibrate it against
+// RUKA2 before enabling Cartesian commands on physical hardware.
 export const PAPER_DH_GEOMETRY_METERS: PaperDhGeometry = {
   // Base height from joint 1 frame to the shoulder plane.
   d1: 0.169525,

@@ -1,6 +1,8 @@
 import { computed, signal } from "@preact/signals";
 import {
   createPreviewController,
+  ARM_JOINT_NAMES,
+  clampJointsToLimits,
   eulerDegFromQuaternion,
   identityQuaternion,
   multiplyQuaternions,
@@ -49,7 +51,7 @@ const DEFAULT_JOINTS = [0, 0, 0, 0, 0, 0];
 const DEFAULT_TCP = [0, 0, 0, 0, 0, 0];
 const DEFAULT_GRIPPER = 55;
 const FOLDED_PRESET_JOINTS: JointVector = [0, 0, 0, 0, 0, 0];
-const UNFOLDED_PRESET_JOINTS: JointVector = [0, 120, -30, 0, 0, 0];
+const UNFOLDED_PRESET_JOINTS: JointVector = [0, -90, 90, 0, 0, 0];
 const ORIENTATION_RATE_MAX_DEG_PER_SEC = 90;
 const previewController = createPreviewController();
 let orientationRateAnimationFrame = 0;
@@ -148,6 +150,7 @@ export function updateJoint(index: number, value: number): void {
   interactionMode.value = "planner_joint";
   const next = cloneTarget(previewTarget.value);
   next.joints[index] = value;
+  next.joints = clampJointsToLimits(asJointVector(next.joints));
   previewTarget.value = next;
   lockedTarget.value = cloneTarget(next);
   appState.value = "target_locked";
@@ -474,7 +477,7 @@ function applyJointPreset(joints: JointVector, armGizmoPreset: boolean): void {
   controlMode.value = "joint";
   interactionMode.value = "planner_joint";
   const next = cloneTarget(previewTarget.value);
-  next.joints = [...joints];
+  next.joints = clampJointsToLimits(joints);
   previewTarget.value = next;
   lockedTarget.value = cloneTarget(next);
   appState.value = "target_locked";
@@ -519,14 +522,7 @@ export function applyRemoteJointState(groupName: "arm" | "gripper", jointNames: 
       mapped[name] = radToDeg(positionsRad[index] ?? 0);
     });
 
-    [
-      "arm_joint_1",
-      "arm_joint_2",
-      "arm_joint_3",
-      "arm_joint_4",
-      "arm_joint_5",
-      "arm_joint_6",
-    ].forEach((jointName, index) => {
+    ARM_JOINT_NAMES.forEach((jointName, index) => {
       if (jointName in mapped) {
         nextReal.joints[index] = mapped[jointName];
       }

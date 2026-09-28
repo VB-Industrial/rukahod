@@ -15,6 +15,7 @@ import {
   stopExecution,
 } from "../store/appState";
 import { ROBOT_PROTOCOL_VERSION, type RobotProtocolMessage, type RobotGroupName } from "./protocol";
+import { ARM_JOINT_NAMES } from "../kinematics";
 import { RobotSocketClient } from "./robotSocket";
 
 type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
@@ -174,14 +175,7 @@ export function sendLockedTargetToRobot() {
     command_id: commandId,
     goal: {
       group_name: "arm",
-      joint_names: [
-        "arm_joint_1",
-        "arm_joint_2",
-        "arm_joint_3",
-        "arm_joint_4",
-        "arm_joint_5",
-        "arm_joint_6",
-      ],
+      joint_names: [...ARM_JOINT_NAMES],
       positions_rad: currentTarget.joints.map(degToRad),
     },
   });

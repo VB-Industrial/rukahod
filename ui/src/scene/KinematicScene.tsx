@@ -3,15 +3,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import URDFLoader from "urdf-loader";
-import { PAPER_DH_GEOMETRY_METERS } from "../kinematics";
 import type { OrientationQuaternion } from "../kinematics";
 
-const JOINT_NAMES = ["arm_joint_1", "arm_joint_2", "arm_joint_3", "arm_joint_4", "arm_joint_5", "arm_joint_6"];
-const HAND_JOINT_NAMES = ["hand_left_finger_joint", "hand_right_finger_joint"];
+const JOINT_NAMES = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"];
 const GIZMO_GRAB_WRIST_PRESET_DEG: [number, number, number] = [0, 90, 0];
-const HAND_MAX_OPENING = 0.01;
-const HAND_TCP_OFFSET = new THREE.Vector3(0, 0, 0.0642);
-const ARM_LINK6_TCP_OFFSET = new THREE.Vector3(0, 0, PAPER_DH_GEOMETRY_METERS.d6);
+const ARM_LINK6_TCP_OFFSET = new THREE.Vector3(0, 0, 0);
 
 type KinematicSceneProps = {
   realJoints: number[];
@@ -403,9 +399,7 @@ export function KinematicScene(props: KinematicSceneProps) {
 
     const packageMap = {
       silverhand_rover_model: "/assets/rover_model",
-      silverhand_arm_description: "/assets/arm",
-      silverhand_arm_model: "/assets/arm",
-      silverhand_hand_model: "/assets/hand",
+      silverhand_rover_description: "/assets/rover_model",
     };
 
     const loader = new URDFLoader();
@@ -429,8 +423,8 @@ export function KinematicScene(props: KinematicSceneProps) {
     resize();
 
     Promise.all([
-      loader.loadAsync("/assets/system/urdf/silverhand_system.urdf"),
-      loader.loadAsync("/assets/system/urdf/silverhand_system.urdf"),
+      loader.loadAsync("/assets/system/urdf/rukahod_system.urdf"),
+      loader.loadAsync("/assets/system/urdf/rukahod_system.urdf"),
     ])
       .then(([realSystem, targetSystem]) => {
         if (disposed) {
@@ -455,8 +449,8 @@ export function KinematicScene(props: KinematicSceneProps) {
         robotRoot.add(targetSystem);
 
         const armBase = realSystem.getObjectByName("arm_base_link") ?? targetSystem.getObjectByName("arm_base_link");
-        const realTool = realSystem.getObjectByName("hand_gripper_link") ?? realSystem.getObjectByName("arm_link_6");
-        const targetTool = targetSystem.getObjectByName("hand_gripper_link") ?? targetSystem.getObjectByName("arm_link_6");
+        const realTool = realSystem.getObjectByName("tool0");
+        const targetTool = targetSystem.getObjectByName("tool0");
         const realLeftFinger = realSystem.getObjectByName("hand_left_finger");
         const realRightFinger = realSystem.getObjectByName("hand_right_finger");
         const targetLeftFinger = targetSystem.getObjectByName("hand_left_finger");
@@ -654,11 +648,8 @@ function applyArmJointValues(robot: any, joints: number[]) {
   });
 }
 
-function applyHandJointValues(robot: any, percent: number) {
-  const opening = HAND_MAX_OPENING * THREE.MathUtils.clamp(percent / 100, 0, 1);
-  HAND_JOINT_NAMES.forEach((jointName) => {
-    robot.setJointValue(jointName, opening);
-  });
+function applyHandJointValues(_robot: any, _percent: number) {
+  // RUKA2 is assembled without an end effector in this preview.
 }
 
 function primeGizmoGrabPreset(
@@ -962,7 +953,7 @@ function getTcpLocalOffset(
   }
 
   if (tool?.name === "hand_gripper_link") {
-    return HAND_TCP_OFFSET.clone();
+    return ARM_LINK6_TCP_OFFSET.clone();
   }
   return ARM_LINK6_TCP_OFFSET.clone();
 }

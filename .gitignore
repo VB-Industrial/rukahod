@@ -1,3 +1,5 @@
 ui/node_modules/
 ui/dist/
 ui/*.tsbuildinfo
+ui/public/assets/system/urdf/rukahod_system.urdf
+ui/src/kinematics/ruka2Limits.generated.ts
