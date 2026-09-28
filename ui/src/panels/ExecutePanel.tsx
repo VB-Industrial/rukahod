@@ -1,12 +1,10 @@
 import {
-  appState,
   canExecute,
   canReset,
   canStop,
   estopActive,
   resetState,
 } from "../store/appState";
-import { translateState } from "../app/viewModel";
 import { sendEstopToRobot, sendLockedTargetToRobot, sendResetEstopToRobot, sendStopToRobot } from "../transport/robotConnectionStore";
 
 export function ExecutePanel() {
@@ -14,7 +12,6 @@ export function ExecutePanel() {
     <section className="panel execute-panel">
       <div className="panel-head">
         <h2>Манипулятор</h2>
-        <span className="muted-text">{translateState(appState.value)}</span>
       </div>
 
       <div className="execution-actions">
@@ -31,7 +28,7 @@ export function ExecutePanel() {
 
       <div className="estop-actions">
         <button className="kill-switch inline" onClick={sendEstopToRobot} type="button">
-          <span>АВАРИЙНЫЙ СТОП</span>
+          <span>Авария</span>
         </button>
         <button
           className="secondary-action danger-outline"
@@ -39,7 +36,7 @@ export function ExecutePanel() {
           onClick={sendResetEstopToRobot}
           type="button"
         >
-          Сброс АС
+          Сброс Аварии
         </button>
       </div>
     </section>
