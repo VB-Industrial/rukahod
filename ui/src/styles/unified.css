@@ -1,0 +1,246 @@
+.rukahod-shell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.rukahod-shell .topbar-status {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.unified-workspace {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(390px, .8fr);
+  gap: var(--gap);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.unified-cameras,
+.unified-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--gap);
+  min-width: 0;
+  min-height: 0;
+}
+
+.unified-cameras > .camera-card {
+  min-block-size: 0;
+}
+
+.arm-controls {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.1fr) minmax(200px, 1.55fr) minmax(135px, .85fr) minmax(145px, 1fr);
+  gap: var(--gap);
+  min-width: 0;
+  min-height: 0;
+}
+
+.arm-controls > .panel,
+.arm-controls .action-stack > .panel {
+  min-height: 0;
+  overflow: visible;
+  padding: var(--panel-pad);
+}
+
+.arm-controls > .panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.arm-controls .slider-list {
+  overflow: visible;
+  flex: 1;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: clamp(3px, .45vh, 6px);
+  padding-right: 0;
+}
+
+.arm-controls .slider-row {
+  min-height: 0;
+  gap: 1px;
+  padding: 2px 6px;
+}
+
+.arm-controls .slider-head {
+  font-size: clamp(10px, .7vw, 12px);
+  line-height: 1.1;
+}
+
+.arm-controls .slider-row input[type="range"] {
+  height: 12px;
+  margin: 0;
+}
+
+.arm-controls .action-stack {
+  min-width: 0;
+  min-height: max-content;
+  grid-template-rows: minmax(0, 1fr) max-content;
+}
+
+.arm-controls .action-stack > .panel {
+  overflow: visible;
+}
+
+.arm-controls .execute-panel .panel-head {
+  margin-bottom: 10px;
+}
+
+.arm-controls .execute-panel .execution-actions {
+  flex: 1;
+  grid-template-rows: minmax(48px, 1.15fr) minmax(42px, 1fr);
+  gap: 10px;
+}
+
+.arm-controls .execute-panel .execute-action {
+  min-height: 48px;
+}
+
+.arm-controls .execute-panel .secondary-action {
+  min-height: 42px;
+}
+
+.arm-controls .execute-panel .estop-actions {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.arm-controls .execute-panel .kill-switch.inline {
+  min-height: 56px;
+}
+
+.arm-controls .pose-preset-panel {
+  gap: 8px;
+}
+
+.arm-controls .pose-preset-panel .preset-action {
+  min-height: 48px;
+}
+
+.arm-controls .panel-head h2 {
+  font-size: clamp(12px, .9vw, 17px);
+}
+
+.arm-controls .model-placeholder {
+  min-height: 0;
+}
+
+.rover-controls {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 62px;
+  gap: var(--gap);
+  min-width: 0;
+  min-height: 0;
+}
+
+.rover-controls > .panel {
+  min-width: 0;
+  min-height: 0;
+  padding: 6px;
+}
+
+.rover-controls .action-preset-chip,
+.rover-controls .speed-preset-chip {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rover-controls .action-preset-chip strong {
+  font-size: clamp(12px, .78vw, 16px);
+  white-space: nowrap;
+}
+
+.rover-controls .instrument-row {
+  min-height: 0;
+}
+
+.rover-controls .telemetry-cluster {
+  gap: clamp(3px, .5vw, 10px);
+  grid-template-columns: clamp(25px, 2.6vw, 52px) minmax(0, 1fr) clamp(25px, 2.6vw, 52px);
+}
+
+.rover-controls .instrument-row {
+  gap: clamp(3px, .5vw, 10px);
+}
+
+@media (max-width: 1500px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .rukahod-shell {
+    height: auto;
+    overflow: visible;
+  }
+
+  .unified-workspace {
+    grid-template-rows: auto auto;
+    overflow: visible;
+  }
+
+  .unified-cameras {
+    min-height: 38vh;
+  }
+
+  .unified-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .arm-controls,
+  .rover-controls {
+    min-height: 390px;
+  }
+}
+
+@media (max-height: 760px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .rukahod-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .unified-workspace {
+    grid-template-rows: minmax(220px, 38vh) minmax(390px, auto);
+    overflow: visible;
+  }
+}
+
+@media (max-width: 850px) {
+  body {
+    overflow: auto;
+  }
+
+  .rukahod-shell .topbar-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .unified-cameras {
+    grid-template-columns: 1fr;
+  }
+
+  .unified-cameras > .camera-card {
+    min-height: 230px;
+  }
+
+  .arm-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(390px, auto);
+  }
+
+  .rover-controls {
+    grid-template-columns: 68px minmax(0, 1fr) 56px;
+    min-height: 260px;
+  }
+}
