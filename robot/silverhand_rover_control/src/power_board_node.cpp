@@ -1,0 +1,193 @@
+#include <chrono>
+#include <memory>
+#include <stdexcept>
+#include <string>
+
+#include "cyphal/cyphal.h"
+#include "cyphal/subscriptions/subscription.h"
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/battery_state.hpp"
+#include "silverhand_rover_control/cyphal/runtime.hpp"
+#include "std_srvs/srv/set_bool.hpp"
+#include "uavcan/si/unit/angular_velocity/Scalar_1_0.h"
+#include "voltbro/battery/state_1_0.h"
+
+TYPE_ALIAS(AngularVelocityMsg, uavcan_si_unit_angular_velocity_Scalar_1_0)
+TYPE_ALIAS(BatteryStateMsg, voltbro_battery_state_1_0)
+
+namespace
+{
+
+constexpr double kCoulombToAmpereHour = 1.0 / 3600.0;
+constexpr auto kPowerBoardSpinPeriod = std::chrono::milliseconds(50);
+constexpr std::size_t kHeartbeatLoopCount = 20U;
+
+class PowerBoardNode : public rclcpp::Node
+{
+public:
+  PowerBoardNode()
+  : Node("power_board_node")
+  {
+    declare_parameter<bool>("use_mock", false);
+    declare_parameter<std::string>("can_iface", "vcan1");
+    declare_parameter<int>("node_id", 111);
+    declare_parameter<int>("queue_len", 1000);
+    declare_parameter<int>("power_board_node_id", 9);
+    declare_parameter<int>("battery_state_port_id", 7993);
+    declare_parameter<std::string>("battery_topic", "/battery_state");
+    declare_parameter<int>("mock_battery_publish_period_ms", 50);
+    declare_parameter<double>("mock_battery_voltage", 25.2);
+    declare_parameter<double>("mock_battery_current", -1.5);
+    declare_parameter<double>("mock_battery_charge_ah", 18.0);
+    declare_parameter<double>("mock_battery_capacity_ah", 24.0);
+    declare_parameter<double>("mock_battery_design_capacity_ah", 24.0);
+    declare_parameter<bool>("mock_battery_present", true);
+
+    use_mock_ = get_parameter("use_mock").as_bool();
+    const auto can_iface = get_parameter("can_iface").as_string();
+    const auto node_id = static_cast<std::uint16_t>(get_parameter("node_id").as_int());
+    const auto queue_len = static_cast<std::size_t>(get_parameter("queue_len").as_int());
+    power_board_node_id_ = static_cast<std::uint16_t>(get_parameter("power_board_node_id").as_int());
+    battery_state_port_id_ = static_cast<std::uint16_t>(get_parameter("battery_state_port_id").as_int());
+    mock_battery_publish_period_ms_ = get_parameter("mock_battery_publish_period_ms").as_int();
+    if (mock_battery_publish_period_ms_ <= 0) {
+      mock_battery_publish_period_ms_ = 50;
+    }
+    mock_battery_voltage_ = static_cast<float>(get_parameter("mock_battery_voltage").as_double());
+    mock_battery_current_ = static_cast<float>(get_parameter("mock_battery_current").as_double());
+    mock_battery_charge_ah_ = static_cast<float>(get_parameter("mock_battery_charge_ah").as_double());
+    mock_battery_capacity_ah_ =
+      static_cast<float>(get_parameter("mock_battery_capacity_ah").as_double());
+    mock_battery_design_capacity_ah_ =
+      static_cast<float>(get_parameter("mock_battery_design_capacity_ah").as_double());
+    mock_battery_present_ = get_parameter("mock_battery_present").as_bool();
+
+    battery_publisher_ = create_publisher<sensor_msgs::msg::BatteryState>(
+      get_parameter("battery_topic").as_string(),
+      10);
+
+    if (use_mock_) {
+      RCLCPP_INFO(
+        get_logger(),
+        "Starting power_board_node in mock mode; hardware access is disabled");
+      publish_mock_battery_state();
+      timer_ = create_wall_timer(
+        std::chrono::milliseconds(mock_battery_publish_period_ms_),
+        std::bind(&PowerBoardNode::publish_mock_battery_state, this));
+      return;
+    }
+
+    runtime_ = std::make_unique<silverhand_rover_control::cyphal::Runtime>();
+    if (!runtime_->start(can_iface, node_id, queue_len)) {
+      throw std::runtime_error("Failed to start Cyphal runtime for power_board_node");
+    }
+
+    battery_subscription_ = std::make_unique<BatteryReader>(
+      runtime_->interface(),
+      battery_state_port_id_,
+      this);
+
+    timer_ = create_wall_timer(
+      kPowerBoardSpinPeriod,
+      std::bind(&PowerBoardNode::spin_once, this));
+  }
+
+private:
+  class BatteryReader : public AbstractSubscription<BatteryStateMsg>
+  {
+  public:
+    BatteryReader(
+      const InterfacePtr & interface,
+      const CanardPortID port_id,
+      PowerBoardNode * node)
+    : AbstractSubscription<BatteryStateMsg>(interface, port_id),
+      node_(node)
+    {
+    }
+
+    void handler(const BatteryStateMsg::Type & message, CanardRxTransfer * /*transfer*/) override
+    {
+      if (node_ == nullptr) {
+        return;
+      }
+      node_->publish_battery_state(message);
+    }
+
+  private:
+    PowerBoardNode * node_;
+  };
+
+  void spin_once()
+  {
+    runtime_->spin_once();
+    ++loop_counter_;
+    if (loop_counter_ >= kHeartbeatLoopCount) {
+      runtime_->publish_heartbeat();
+      loop_counter_ = 0U;
+    }
+  }
+
+  void publish_mock_battery_state()
+  {
+    sensor_msgs::msg::BatteryState ros_msg;
+    ros_msg.header.stamp = now();
+    ros_msg.voltage = mock_battery_voltage_;
+    ros_msg.current = mock_battery_current_;
+    ros_msg.charge = mock_battery_charge_ah_;
+    ros_msg.capacity = mock_battery_capacity_ah_;
+    ros_msg.design_capacity = mock_battery_design_capacity_ah_;
+    ros_msg.percentage =
+      ros_msg.capacity > 0.0F ? static_cast<float>(ros_msg.charge / ros_msg.capacity) : 0.0F;
+    ros_msg.present = mock_battery_present_;
+    ros_msg.power_supply_status = sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_UNKNOWN;
+    ros_msg.power_supply_health = sensor_msgs::msg::BatteryState::POWER_SUPPLY_HEALTH_UNKNOWN;
+    ros_msg.power_supply_technology =
+      sensor_msgs::msg::BatteryState::POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
+    battery_publisher_->publish(ros_msg);
+  }
+
+  void publish_battery_state(const BatteryStateMsg::Type & message)
+  {
+    sensor_msgs::msg::BatteryState ros_msg;
+    ros_msg.header.stamp = now();
+    ros_msg.voltage = message.voltage.volt;
+    ros_msg.current = message.current.ampere;
+    ros_msg.charge = message.charge.coulomb * kCoulombToAmpereHour;
+    ros_msg.capacity = message.capacity.coulomb * kCoulombToAmpereHour;
+    ros_msg.design_capacity = message.design_capacity.coulomb * kCoulombToAmpereHour;
+    ros_msg.percentage =
+      ros_msg.capacity > 0.0F ? static_cast<float>(ros_msg.charge / ros_msg.capacity) : 0.0F;
+    ros_msg.present = message.is_present.value != 0;
+    ros_msg.power_supply_status = sensor_msgs::msg::BatteryState::POWER_SUPPLY_STATUS_UNKNOWN;
+    ros_msg.power_supply_health = sensor_msgs::msg::BatteryState::POWER_SUPPLY_HEALTH_UNKNOWN;
+    ros_msg.power_supply_technology =
+      sensor_msgs::msg::BatteryState::POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
+    battery_publisher_->publish(ros_msg);
+  }
+
+  std::unique_ptr<silverhand_rover_control::cyphal::Runtime> runtime_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr battery_publisher_;
+  std::unique_ptr<BatteryReader> battery_subscription_;
+  std::uint16_t power_board_node_id_{9};
+  std::uint16_t battery_state_port_id_{7993};
+  bool use_mock_{false};
+  int mock_battery_publish_period_ms_{50};
+  float mock_battery_voltage_{25.2F};
+  float mock_battery_current_{-1.5F};
+  float mock_battery_charge_ah_{18.0F};
+  float mock_battery_capacity_ah_{24.0F};
+  float mock_battery_design_capacity_ah_{24.0F};
+  bool mock_battery_present_{true};
+  std::size_t loop_counter_{0};
+};
+
+}  // namespace
+
+int main(int argc, char ** argv)
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<PowerBoardNode>());
+  rclcpp::shutdown();
+  return 0;
+}

@@ -1,0 +1,3 @@
+[submodule "robot/RUKA2"]
+	path = robot/RUKA2
+	url = https://github.com/VB-Industrial/RUKA2.git

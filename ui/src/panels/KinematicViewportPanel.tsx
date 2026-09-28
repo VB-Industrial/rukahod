@@ -22,12 +22,6 @@ export function KinematicViewportPanel() {
     target: [previewTarget.value.tcp[0], previewTarget.value.tcp[1], previewTarget.value.tcp[2]] as [number, number, number],
   });
 
-  const tcpDistance = Math.sqrt(
-    (tcpPosition.real[0] - tcpPosition.target[0]) ** 2 +
-      (tcpPosition.real[1] - tcpPosition.target[1]) ** 2 +
-      (tcpPosition.real[2] - tcpPosition.target[2]) ** 2,
-  );
-  const targetChanged = tcpDistance > 0.0001;
   const currentOrientation = `Крен ${formatNumber(realTarget.value.tcp[3])} / Тангаж ${formatNumber(realTarget.value.tcp[4])} / Рыскание ${formatNumber(
     realTarget.value.tcp[5],
   )}°`;
@@ -77,9 +71,6 @@ export function KinematicViewportPanel() {
             </strong>
             <small>{targetOrientation}</small>
           </div>
-          <span className={targetChanged ? "pose-pill target" : "pose-pill synced"}>
-            {targetChanged ? `Цель смещена на ${formatNumber(tcpDistance)} м` : "Цель совпадает"}
-          </span>
         </div>
       </div>
     </div>

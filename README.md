@@ -17,3 +17,5 @@ npm run dev -- --host 0.0.0.0 --port 4175
 Исходные панели: [манипулятор](https://github.com/VB-Industrial/silverhand_arm_teleop), [ровер](https://github.com/VB-Industrial/silverhand_rover_teleop).
 
 План единого пакета описан в [архитектуре](docs/architecture.md), черновик команд и состояний — в [контракте](docs/protocol.md).
+
+Актуальные пакеты руки из `RUKA2` и пакет ровера находятся в [robot/](robot/README.md). Они используют входящие Cyphal heartbeat для проверки аппаратной связи. Перенос WS gateway остаётся следующим этапом.

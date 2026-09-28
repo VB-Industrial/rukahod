@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="silverhand_rover_ros2_control"
+    params="name initial_positions_file use_mock_hardware:=true can_iface:=vcan1 node_id:=110 queue_len:=1000 heartbeat_node_ids:='' heartbeat_timeout_ms:=3000 imu_name:=imu_sensor imu_frame_id:=imu_link imu_device_path:='' imu_vid:=51966 imu_pid:=16388 imu_report_size:=64 motor_command_port_base:=3000 motor_feedback_port_base:=3000">
+    <xacro:property
+      name="initial_positions"
+      value="${xacro.load_yaml(initial_positions_file)['initial_positions']}"/>
+    <xacro:property
+      name="use_mock_hardware_bool"
+      value="${str(use_mock_hardware).lower() in ['true', '1', 'yes']}"/>
+
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <xacro:if value="${use_mock_hardware_bool}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware_bool}">
+          <plugin>silverhand_rover_control/SilverhandRoverSystem</plugin>
+          <param name="can_iface">${can_iface}</param>
+          <param name="node_id">${node_id}</param>
+          <param name="queue_len">${queue_len}</param>
+          <param name="heartbeat_node_ids">${heartbeat_node_ids}</param>
+          <param name="heartbeat_timeout_ms">${heartbeat_timeout_ms}</param>
+          <param name="imu_name">${imu_name}</param>
+          <param name="imu_frame_id">${imu_frame_id}</param>
+          <param name="imu_device_path">${imu_device_path}</param>
+          <param name="imu_vid">${imu_vid}</param>
+          <param name="imu_pid">${imu_pid}</param>
+          <param name="imu_report_size">${imu_report_size}</param>
+          <param name="motor_command_port_base">${motor_command_port_base}</param>
+          <param name="motor_feedback_port_base">${motor_feedback_port_base}</param>
+        </xacro:unless>
+      </hardware>
+
+      <joint name="left_front_wheel_joint">
+        <param name="motor_id">1</param>
+        <param name="direction_multiplier">-1.0</param>
+        <command_interface name="velocity"/>
+        <state_interface name="position">
+          <param name="initial_value">${initial_positions['left_front_wheel_joint']}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="left_middle_wheel_joint">
+        <param name="motor_id">2</param>
+        <param name="direction_multiplier">-1.0</param>
+        <command_interface name="velocity"/>
+        <state_interface name="position">
+          <param name="initial_value">${initial_positions['left_middle_wheel_joint']}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="left_rear_wheel_joint">
+        <param name="motor_id">3</param>
+        <param name="direction_multiplier">-1.0</param>
+        <command_interface name="velocity"/>
+        <state_interface name="position">
+          <param name="initial_value">${initial_positions['left_rear_wheel_joint']}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="right_front_wheel_joint">
+        <param name="motor_id">4</param>
+        <param name="direction_multiplier">1.0</param>
+        <command_interface name="velocity"/>
+        <state_interface name="position">
+          <param name="initial_value">${initial_positions['right_front_wheel_joint']}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="right_middle_wheel_joint">
+        <param name="motor_id">5</param>
+        <param name="direction_multiplier">1.0</param>
+        <command_interface name="velocity"/>
+        <state_interface name="position">
+          <param name="initial_value">${initial_positions['right_middle_wheel_joint']}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="right_rear_wheel_joint">
+        <param name="motor_id">6</param>
+        <param name="direction_multiplier">1.0</param>
+        <command_interface name="velocity"/>
+        <state_interface name="position">
+          <param name="initial_value">${initial_positions['right_rear_wheel_joint']}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <sensor name="${imu_name}">
+        <state_interface name="orientation.x"/>
+        <state_interface name="orientation.y"/>
+        <state_interface name="orientation.z"/>
+        <state_interface name="orientation.w"/>
+        <state_interface name="angular_velocity.x"/>
+        <state_interface name="angular_velocity.y"/>
+        <state_interface name="angular_velocity.z"/>
+        <state_interface name="linear_acceleration.x"/>
+        <state_interface name="linear_acceleration.y"/>
+        <state_interface name="linear_acceleration.z"/>
+      </sensor>
+    </ros2_control>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,24 @@
+[Unit]
+Description=SilverHand rover control (%i)
+Wants=network-online.target
+After=network-online.target
+Requires=ethernet-can.service
+After=ethernet-can.service
+
+[Service]
+User=voltbro
+Group=voltbro
+Type=simple
+WorkingDirectory=%h/silver_ws
+Environment=ROS_WS=%h/silver_ws
+Environment=ROS_DISTRO=jazzy
+Environment=AMENT_TRACE_SETUP_FILES=
+ExecStartPre=/usr/bin/sleep 30
+ExecStart=%h/silver_ws/src/silverhand_rover_control/scripts/start_rover_%i.sh
+Restart=on-failure
+RestartSec=2
+KillSignal=SIGINT
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
