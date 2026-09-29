@@ -180,9 +180,9 @@ export function updateTcp(index: number, value: number): void {
   applyTcpPreview(next);
 }
 
-export function updateTcpPositionFromGizmo(position: [number, number, number]): void {
+export function updateTcpPositionFromGizmo(position: [number, number, number]): boolean {
   if (editingDisabled.value) {
-    return;
+    return false;
   }
 
   gizmoWristPresetArmed.value = false;
@@ -193,12 +193,12 @@ export function updateTcpPositionFromGizmo(position: [number, number, number]): 
   next.tcp[0] = position[0];
   next.tcp[1] = position[1];
   next.tcp[2] = position[2];
-  applyTcpPreview(next);
+  return applyTcpPreview(next);
 }
 
-export function updateTcpQuaternionFromGizmo(quaternion: OrientationQuaternion): void {
+export function updateTcpQuaternionFromGizmo(quaternion: OrientationQuaternion): boolean {
   if (editingDisabled.value) {
-    return;
+    return false;
   }
 
   gizmoWristPresetArmed.value = false;
@@ -208,7 +208,7 @@ export function updateTcpQuaternionFromGizmo(quaternion: OrientationQuaternion):
   const next = cloneTarget(previewTarget.value);
   next.orientationQuaternion = normalizeQuaternion(quaternion);
   syncEulerReadout(next);
-  applyTcpPreview(next);
+  return applyTcpPreview(next);
 }
 
 export function syncTcpPoseFromModel(
@@ -453,7 +453,7 @@ export function resetEstop(): void {
   };
 }
 
-function applyTcpPreview(next: TargetBundle): void {
+function applyTcpPreview(next: TargetBundle): boolean {
   const result = previewController.computePosePreview(toTcpPose(next), asJointVector(previewTarget.value.joints));
 
   if (result.previewJointsDeg) {
@@ -461,12 +461,10 @@ function applyTcpPreview(next: TargetBundle): void {
     previewTarget.value = next;
     lockedTarget.value = cloneTarget(next);
     appState.value = "target_locked";
-    return;
+    return true;
   }
 
-  previewTarget.value = next;
-  lockedTarget.value = null;
-  appState.value = "preview";
+  return false;
 }
 
 function applyJointPreset(joints: JointVector, armGizmoPreset: boolean): void {

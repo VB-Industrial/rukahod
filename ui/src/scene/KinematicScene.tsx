@@ -23,8 +23,8 @@ type KinematicSceneProps = {
   onRealJointPoseSync?: (position: [number, number, number], quaternion: OrientationQuaternion) => void;
   onTargetJointPoseSync?: (position: [number, number, number], quaternion: OrientationQuaternion) => void;
   onConsumeGizmoWristPreset?: () => void;
-  onTargetQuaternionChange?: (quaternion: OrientationQuaternion) => void;
-  onTargetTcpChange?: (position: [number, number, number]) => void;
+  onTargetQuaternionChange?: (quaternion: OrientationQuaternion) => boolean | void;
+  onTargetTcpChange?: (position: [number, number, number]) => boolean | void;
 };
 
 type LoadedSceneRefs = {
@@ -201,7 +201,10 @@ export function KinematicScene(props: KinematicSceneProps) {
       ];
 
       if (!tcpArraysEqual(next, latest.targetTcp)) {
-        latest.onTargetTcpChange(next);
+        if (latest.onTargetTcpChange(next) === false) {
+          setGizmoAnchorPose(gizmoAnchor, sceneRefs.current.armBase, latest.targetTcp, latest.targetQuaternion, syncingGizmoRef);
+          translateProxy.position.copy(robotRoot.worldToLocal(gizmoAnchor.position.clone()));
+        }
       }
     });
 
@@ -213,7 +216,9 @@ export function KinematicScene(props: KinematicSceneProps) {
 
       const orientation = tcpQuaternionFromWorld(sceneRefs.current.armBase, gizmoAnchor.quaternion);
       if (!quaternionArraysEqual(orientation, latest.targetQuaternion)) {
-        latest.onTargetQuaternionChange(orientation);
+        if (latest.onTargetQuaternionChange(orientation) === false) {
+          setAnchorOrientation(gizmoAnchor, sceneRefs.current.armBase, latest.targetQuaternion);
+        }
       }
     });
 
@@ -330,7 +335,9 @@ export function KinematicScene(props: KinematicSceneProps) {
       ];
 
       if (!tcpArraysEqual(next, latest.targetTcp)) {
-        latest.onTargetTcpChange(next);
+        if (latest.onTargetTcpChange(next) === false) {
+          setGizmoAnchorPose(gizmoAnchor, sceneRefs.current.armBase, latest.targetTcp, latest.targetQuaternion, syncingGizmoRef);
+        }
       }
     };
 
