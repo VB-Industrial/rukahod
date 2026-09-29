@@ -13,6 +13,7 @@ import {
   type OrientationQuaternion,
   type TcpPose,
 } from "../kinematics";
+import { RUKA2_INITIAL_JOINTS_DEG } from "../kinematics/ruka2Initial.generated";
 
 export type AppTopLevelState =
   | "idle"
@@ -47,10 +48,10 @@ type TargetBundle = {
   gripper: number;
 };
 
-const DEFAULT_JOINTS = [0, 0, 0, 0, 0, 0];
+const DEFAULT_JOINTS = [...RUKA2_INITIAL_JOINTS_DEG];
 const DEFAULT_TCP = [0, 0, 0, 0, 0, 0];
 const DEFAULT_GRIPPER = 55;
-const FOLDED_PRESET_JOINTS: JointVector = [0, 0, 0, 0, 0, 0];
+const FOLDED_PRESET_JOINTS: JointVector = [...RUKA2_INITIAL_JOINTS_DEG];
 const UNFOLDED_PRESET_JOINTS: JointVector = [0, -90, 90, 0, 0, 0];
 const ORIENTATION_RATE_MAX_DEG_PER_SEC = 90;
 const previewController = createPreviewController();

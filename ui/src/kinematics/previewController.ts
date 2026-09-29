@@ -1,4 +1,4 @@
-import { createPaperAnalyticIkSolver, solveAnalyticIkPreview } from "./analyticIk";
+import { createRuka2IkSolver, solveAnalyticIkPreview } from "./ruka2Kinematics";
 import { areJointLimitsSatisfied, DEFAULT_JOINT_LIMITS_DEG } from "./jointLimits";
 import type {
   AnalyticIkSolver,
@@ -16,7 +16,7 @@ export function createPreviewController(options?: {
   solver?: AnalyticIkSolver | null;
   maxJumpDeg?: number;
 }): PreviewController {
-  const solver = options?.solver ?? createPaperAnalyticIkSolver();
+  const solver = options?.solver ?? createRuka2IkSolver();
   const maxJumpDeg = options?.maxJumpDeg ?? 120;
 
   return {

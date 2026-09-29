@@ -26,24 +26,14 @@ export function selectBestSolution(
       candidate,
       maxJointJumpDeg: maxJointJump(candidate.jointsDeg, currentJointsDeg),
       cost: jointDistanceCost(candidate.jointsDeg, currentJointsDeg, weights),
-    }));
-
-  const elbowUp = scored
-    .filter((entry) => isElbowUpBranch(entry.candidate))
+    }))
+    .filter((entry) => options?.maxJumpDeg === undefined || entry.maxJointJumpDeg <= options.maxJumpDeg)
     .sort((left, right) => left.cost - right.cost);
-  const elbowDown = scored
-    .filter((entry) => !isElbowUpBranch(entry.candidate))
-    .sort((left, right) => left.cost - right.cost);
-  const preferred = elbowUp.length > 0 ? elbowUp : elbowDown;
 
   return {
-    selected: preferred[0]?.candidate ?? null,
-    rejected: candidates.filter((candidate) => candidate !== preferred[0]?.candidate),
+    selected: scored[0]?.candidate ?? null,
+    rejected: candidates.filter((candidate) => candidate !== scored[0]?.candidate),
   };
-}
-
-function isElbowUpBranch(candidate: AnalyticIkCandidate): boolean {
-  return candidate.branchId.startsWith("elbow_up");
 }
 
 function jointDistanceCost(
@@ -52,22 +42,11 @@ function jointDistanceCost(
   weights: Record<(typeof ARM_JOINT_NAMES)[number], number>,
 ): number {
   return ARM_JOINT_NAMES.reduce((acc, jointName, index) => {
-    const diff = shortestAngularDistanceDeg(candidate[index], current[index]);
+    const diff = candidate[index] - current[index];
     return acc + weights[jointName] * diff * diff;
   }, 0);
 }
 
 function maxJointJump(candidate: JointVector, current: JointVector): number {
-  return candidate.reduce((max, value, index) => Math.max(max, Math.abs(shortestAngularDistanceDeg(value, current[index]))), 0);
-}
-
-function shortestAngularDistanceDeg(target: number, current: number): number {
-  let diff = target - current;
-  while (diff <= -180) {
-    diff += 360;
-  }
-  while (diff > 180) {
-    diff -= 360;
-  }
-  return diff;
+  return candidate.reduce((max, value, index) => Math.max(max, Math.abs(value - current[index])), 0);
 }

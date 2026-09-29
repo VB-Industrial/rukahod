@@ -127,6 +127,8 @@ export function KinematicScene(props: KinematicSceneProps) {
 
     const gizmoAnchor = new THREE.Object3D();
     scene.add(gizmoAnchor);
+    const translateProxy = new THREE.Object3D();
+    robotRoot.add(translateProxy);
 
     const gizmoVisual = createGizmoVisual();
     gizmoAnchor.add(gizmoVisual);
@@ -136,10 +138,10 @@ export function KinematicScene(props: KinematicSceneProps) {
 
     const translateTransform = new TransformControls(camera, renderer.domElement);
     translateTransform.setMode("translate");
-    translateTransform.setSpace("world");
+    translateTransform.setSpace("local");
     translateTransform.size = 1.38;
     translateTransform.enabled = false;
-    translateTransform.attach(gizmoAnchor);
+    translateTransform.attach(translateProxy);
     configureTranslateHelper(translateTransform);
 
     const rotateTransform = new TransformControls(camera, renderer.domElement);
@@ -190,6 +192,7 @@ export function KinematicScene(props: KinematicSceneProps) {
         return;
       }
 
+      translateProxy.getWorldPosition(gizmoAnchor.position);
       const local = sceneRefs.current.armBase.worldToLocal(gizmoAnchor.position.clone());
       const next: [number, number, number] = [
         roundToMillimeters(local.x),
@@ -508,6 +511,9 @@ export function KinematicScene(props: KinematicSceneProps) {
     let animationFrame = 0;
     const renderLoop = () => {
       controls.update();
+      if (!draggingRef.current) {
+        translateProxy.position.copy(robotRoot.worldToLocal(gizmoAnchor.position.clone()));
+      }
       pruneHelpers();
       if (sceneRefs.current.targetSystem) {
         configureTargetRobot(sceneRefs.current.targetSystem);

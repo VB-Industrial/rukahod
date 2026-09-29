@@ -1,5 +1,4 @@
-export * from "./analyticIk";
-export * from "./armGeometry";
+export * from "./ruka2Kinematics";
 export * from "./jointLimits";
 export * from "./previewController";
 export * from "./quaternion";
