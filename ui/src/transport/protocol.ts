@@ -1,6 +1,6 @@
 export const ROBOT_PROTOCOL_VERSION = 1 as const;
 
-export const ROBOT_GROUP_NAMES = ["arm", "gripper"] as const;
+export const ROBOT_GROUP_NAMES = ["arm"] as const;
 export type RobotGroupName = (typeof ROBOT_GROUP_NAMES)[number];
 
 export type ProtocolTimestampSec = number;

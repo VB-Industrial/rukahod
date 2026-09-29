@@ -161,7 +161,7 @@ function CameraCard({ id }: { id: CameraId }) {
 
 export function ServicePanel() {
   const armReady = armTelemetryReady.value && armSafety.value.noFaults;
-  const roverReady = roverConnection.value === "connected" && roverGroups.value.includes("rover") && roverStateAt.value !== null && healthClock.value - roverStateAt.value < 5000 && roverSafety.value.roverReady && roverSafety.value.noFaults;
+  const roverReady = roverConnection.value === "connected" && roverGroups.value.includes("rover") && roverSafety.value.roverReady && roverSafety.value.noFaults;
 
   return (
     <section className="service-stage panel" aria-label="Настройка соединений и камер">

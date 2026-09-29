@@ -1,15 +1,15 @@
 import { cameraSummary } from "../camera/cameraStore";
 import { safetyState as armSafety } from "../store/appState";
-import { healthClock, settingsOpen, toggleSettings } from "../store/uiState";
-import { armJointStateAt, robotConnectionState as armConnection, robotConnectionGroups as armGroups } from "../transport/robotConnectionStore";
+import { settingsOpen, toggleSettings } from "../store/uiState";
+import { robotConnectionState as armConnection, robotConnectionGroups as armGroups } from "../transport/robotConnectionStore";
 import { safetyState as roverSafety } from "../rover/store/appState";
-import { robotConnectionState as roverConnection, robotConnectionGroups as roverGroups, roverStateAt } from "../rover/transport/robotConnectionStore";
+import { robotConnectionState as roverConnection, robotConnectionGroups as roverGroups } from "../rover/transport/robotConnectionStore";
 
 export function HeaderBar() {
   const cameraCount = cameraSummary.value.liveCount;
   const cameraTotal = cameraSummary.value.totalPrimary;
-  const armReady = armConnection.value === "connected" && armGroups.value.includes("arm") && armJointStateAt.value !== null && healthClock.value - armJointStateAt.value < 5000 && armSafety.value.noFaults;
-  const roverReady = roverConnection.value === "connected" && roverGroups.value.includes("rover") && roverStateAt.value !== null && healthClock.value - roverStateAt.value < 5000 && roverSafety.value.roverReady && roverSafety.value.noFaults;
+  const armReady = armConnection.value === "connected" && armGroups.value.includes("arm") && armSafety.value.noFaults;
+  const roverReady = roverConnection.value === "connected" && roverGroups.value.includes("rover") && roverSafety.value.roverReady && roverSafety.value.noFaults;
   const hasErrors = cameraSummary.value.hasErrors || armConnection.value === "error" || roverConnection.value === "error" || !armSafety.value.noFaults || !roverSafety.value.noFaults;
 
   return (

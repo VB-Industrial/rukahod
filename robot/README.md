@@ -1,5 +1,7 @@
 # Аппаратные ROS-пакеты
 
+WS gateway для руки и ровера находится в [rukahod_ws_gateway/](rukahod_ws_gateway/README.md). Он собирается вместе с пакетами `robot/` и запускается в двух независимых процессах.
+
 `RUKA2` подключён как Git-сабмодуль и является единственным источником `ruka2_control` и `ruka2_description`. `silverhand_rover_control` пока перенесён из одноимённого проекта. Имена ROS-пакетов сохранены для совместимости с исходным кодом. Зависимость `libcxxcanard` должна быть доступна в ROS workspace; условия использования указаны в `package.xml` исходных пакетов.
 
 `ruka2_control` уже принимает входящие Cyphal heartbeat и feedback узлов `21–26`, проверяет их при активации в течение заданного `activation_timeout` и публикует диагностику. В активном режиме проверка свежести выполняется каждый сотый цикл `read()`; его `controller_manager` настроен на 100 Гц. В запуске РукаХода захват отключается явными аргументами `use_end_effector:=false end_effector_type:=none`; исходные варианты RUKA2 остаются доступными.
@@ -22,4 +24,4 @@ git submodule update --init robot/RUKA2
 colcon build --base-paths robot --packages-select ruka2_description ruka2_control silverhand_rover_control
 ```
 
-Для реального ровера передайте подтверждённые ID через `heartbeat_node_ids` в xacro, например строкой с ID через пробел или запятую. Числа `motor_id` из текущего URDF не следует автоматически считать Cyphal node ID.
+Для реального ровера передайте подтверждённые ID аргументом запуска `heartbeat_node_ids:=...`, например строкой с ID через запятую. Аргумент передаётся в xacro; числа `motor_id` из текущего URDF не следует автоматически считать Cyphal node ID.

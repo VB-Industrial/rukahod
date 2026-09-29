@@ -148,6 +148,8 @@ def generate_launch_description():
     use_mock_hardware = LaunchConfiguration("use_mock_hardware")
     can_iface = LaunchConfiguration("can_iface")
     node_id = LaunchConfiguration("node_id")
+    heartbeat_node_ids = LaunchConfiguration("heartbeat_node_ids")
+    heartbeat_timeout_ms = LaunchConfiguration("heartbeat_timeout_ms")
     queue_len = LaunchConfiguration("queue_len")
     imu_name = LaunchConfiguration("imu_name")
     imu_frame_id = LaunchConfiguration("imu_frame_id")
@@ -185,6 +187,12 @@ def generate_launch_description():
             " ",
             "node_id:=",
             node_id,
+            " ",
+            "heartbeat_node_ids:=",
+            heartbeat_node_ids,
+            " ",
+            "heartbeat_timeout_ms:=",
+            heartbeat_timeout_ms,
             " ",
             "queue_len:=",
             queue_len,
@@ -236,6 +244,16 @@ def generate_launch_description():
                 "node_id",
                 default_value=str(ros_control_profile["node_id"]),
                 description="Cyphal node id reserved for the rover ros2_control hardware plugin.",
+            ),
+            DeclareLaunchArgument(
+                "heartbeat_node_ids",
+                default_value="",
+                description="Comma-separated Cyphal node IDs required for real rover activation.",
+            ),
+            DeclareLaunchArgument(
+                "heartbeat_timeout_ms",
+                default_value="3000",
+                description="Maximum age of incoming rover heartbeat messages.",
             ),
             DeclareLaunchArgument(
                 "queue_len",

@@ -25,6 +25,8 @@ def generate_launch_description():
     power_board_can_iface = LaunchConfiguration("power_board_can_iface")
     headlights_can_iface = LaunchConfiguration("headlights_can_iface")
     node_id = LaunchConfiguration("node_id")
+    heartbeat_node_ids = LaunchConfiguration("heartbeat_node_ids")
+    heartbeat_timeout_ms = LaunchConfiguration("heartbeat_timeout_ms")
     queue_len = LaunchConfiguration("queue_len")
     use_imu_odometry = LaunchConfiguration("use_imu_odometry")
     use_power_board = LaunchConfiguration("use_power_board")
@@ -50,6 +52,8 @@ def generate_launch_description():
                 ),
             ),
             DeclareLaunchArgument("node_id", default_value=str(ros_control_profile["node_id"])),
+            DeclareLaunchArgument("heartbeat_node_ids", default_value=""),
+            DeclareLaunchArgument("heartbeat_timeout_ms", default_value="3000"),
             DeclareLaunchArgument("queue_len", default_value=str(ros_control_profile["queue_len"])),
             DeclareLaunchArgument("use_imu_odometry", default_value=str(ros_control_profile["use_imu_odometry"])),
             DeclareLaunchArgument(
@@ -70,6 +74,8 @@ def generate_launch_description():
                     "use_mock_hardware": "false",
                     "can_iface": can_iface,
                     "node_id": node_id,
+                    "heartbeat_node_ids": heartbeat_node_ids,
+                    "heartbeat_timeout_ms": heartbeat_timeout_ms,
                     "queue_len": queue_len,
                     "use_imu_odometry": use_imu_odometry,
                 }.items(),

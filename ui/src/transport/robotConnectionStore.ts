@@ -1,14 +1,11 @@
 import { computed, signal } from "@preact/signals";
-import { healthClock } from "../store/uiState";
 import {
   activateEstop,
   applyRemoteExecutionState,
   applyRemoteJointState,
   canExecute,
   executeTarget,
-  gripperGoalPercent,
   lockedTarget,
-  realTarget,
   resetEstop,
   setConnectionReady,
   setFault,
@@ -40,9 +37,7 @@ export const robotLastMessageTs = signal<number | null>(null);
 export const armJointStateAt = signal<number | null>(null);
 export const armTelemetryReady = computed(() =>
   robotConnectionState.value === "connected" &&
-  robotConnectionGroups.value.includes("arm") &&
-  armJointStateAt.value !== null &&
-  healthClock.value - armJointStateAt.value < 5000,
+  robotConnectionGroups.value.includes("arm"),
 );
 export const robotBackendStatus = signal("");
 export const robotBackendLog = signal<BackendLogEntry[]>([]);
@@ -54,7 +49,6 @@ let heartbeatCounter = 1;
 let manuallyDisconnected = false;
 let pendingJointStateFrame = 0;
 let pendingArmJointState: { jointNames: string[]; positionsRad: number[] } | null = null;
-let pendingGripperJointState: { jointNames: string[]; positionsRad: number[] } | null = null;
 
 export function initializeRobotConnection() {
   connectRobot();
@@ -230,64 +224,6 @@ export function sendResetEstopToRobot() {
   return sent;
 }
 
-export function sendGripperGoalToRobot() {
-  if (!client?.isConnected()) {
-    return false;
-  }
-
-  const openingRad = (Math.max(0, Math.min(100, gripperGoalPercent.value)) / 100) * 0.01;
-  const sent = client.send("set_joint_goal", {
-    command_id: createCommandId("gripper-goal"),
-    goal: {
-      group_name: "gripper",
-      joint_names: [
-        "hand_left_finger_joint",
-        "hand_right_finger_joint",
-      ],
-      positions_rad: [openingRad, openingRad],
-    },
-  });
-
-  if (!sent) {
-    return false;
-  }
-
-  client.send("execute", {
-    command_id: createCommandId("gripper-execute"),
-    group_name: "gripper",
-  });
-  return true;
-}
-
-export function sendGripperStopToRobot() {
-  if (!client?.isConnected()) {
-    return false;
-  }
-
-  const openingRad = (Math.max(0, Math.min(100, realTarget.value.gripper)) / 100) * 0.01;
-  const sent = client.send("set_joint_goal", {
-    command_id: createCommandId("gripper-stop"),
-    goal: {
-      group_name: "gripper",
-      joint_names: [
-        "hand_left_finger_joint",
-        "hand_right_finger_joint",
-      ],
-      positions_rad: [openingRad, openingRad],
-    },
-  });
-
-  if (!sent) {
-    return false;
-  }
-
-  client.send("execute", {
-    command_id: createCommandId("gripper-stop-execute"),
-    group_name: "gripper",
-  });
-  return true;
-}
-
 function handleRobotMessage(message: RobotProtocolMessage) {
   robotLastMessageTs.value = Date.now();
 
@@ -344,19 +280,13 @@ function pushBackendLog(level: BackendLogLevel, text: string) {
   ].slice(0, 6);
 }
 
-function formatBackendState(scope: string, groupName: RobotGroupName, status: string, message: string) {
-  const groupLabel = groupName === "arm" ? "Рука" : "Захват";
-  return `${scope}: ${groupLabel} -> ${status}${message ? ` — ${message}` : ""}`;
+function formatBackendState(scope: string, _groupName: RobotGroupName, status: string, message: string) {
+  return `${scope}: Рука -> ${status}${message ? ` — ${message}` : ""}`;
 }
 
 function queueRemoteJointState(groupName: RobotGroupName, jointNames: string[], positionsRad: number[]) {
   if (groupName === "arm") {
     pendingArmJointState = {
-      jointNames: [...jointNames],
-      positionsRad: [...positionsRad],
-    };
-  } else if (groupName === "gripper") {
-    pendingGripperJointState = {
       jointNames: [...jointNames],
       positionsRad: [...positionsRad],
     };
@@ -376,10 +306,6 @@ function queueRemoteJointState(groupName: RobotGroupName, jointNames: string[], 
       pendingArmJointState = null;
     }
 
-    if (pendingGripperJointState) {
-      applyRemoteJointState("gripper", pendingGripperJointState.jointNames, pendingGripperJointState.positionsRad);
-      pendingGripperJointState = null;
-    }
   });
 }
 

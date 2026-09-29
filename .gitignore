@@ -1,4 +1,9 @@
 ui/node_modules/
+/build/
+/install/
+/log/
+__pycache__/
+*.pyc
 ui/dist/
 ui/*.tsbuildinfo
 ui/public/assets/system/urdf/rukahod_system.urdf

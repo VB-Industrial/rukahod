@@ -6,6 +6,8 @@
   <xacro:arg name="use_mock_hardware" default="true"/>
   <xacro:arg name="can_iface" default="vcan1"/>
   <xacro:arg name="node_id" default="110"/>
+  <xacro:arg name="heartbeat_node_ids" default=""/>
+  <xacro:arg name="heartbeat_timeout_ms" default="3000"/>
   <xacro:arg name="queue_len" default="1000"/>
   <xacro:arg name="imu_name" default="imu_sensor"/>
   <xacro:arg name="imu_frame_id" default="imu_link"/>
@@ -25,6 +27,8 @@
     use_mock_hardware="$(arg use_mock_hardware)"
     can_iface="$(arg can_iface)"
     node_id="$(arg node_id)"
+    heartbeat_node_ids="$(arg heartbeat_node_ids)"
+    heartbeat_timeout_ms="$(arg heartbeat_timeout_ms)"
     queue_len="$(arg queue_len)"
     imu_name="$(arg imu_name)"
     imu_frame_id="$(arg imu_frame_id)"
