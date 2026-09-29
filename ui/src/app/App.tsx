@@ -16,11 +16,37 @@ import { ageTelemetry, tickMock } from "../rover/store/appState";
 import { initializeRobotConnection as initializeArmConnection } from "../transport/robotConnectionStore";
 import { initializeRobotConnection as initializeRoverConnection } from "../rover/transport/robotConnectionStore";
 import { healthClock, settingsOpen } from "../store/uiState";
+import { useWorkspaceLayout, type ResizeAxis } from "./useWorkspaceLayout";
 
 export function App() {
+  const { workspaceRef, layout, start, move, stop, keyboardResize, reset } = useWorkspaceLayout();
   const wristCollapsed = cameraStates.value.wrist.collapsed;
   const frontCollapsed = cameraStates.value.driver.collapsed;
   const oneCollapsed = wristCollapsed || frontCollapsed;
+  const commonCameraHeight = Math.max(layout.leftY, layout.rightY);
+  const leftHeight = oneCollapsed || settingsOpen.value ? commonCameraHeight : layout.leftY;
+  const rightHeight = oneCollapsed || settingsOpen.value ? commonCameraHeight : layout.rightY;
+  const layoutStyle = `--top-split:${layout.topX * 100}%;--bottom-split:${layout.bottomX * 100}%;` +
+    `--left-split:${leftHeight * 100}%;--right-split:${rightHeight * 100}%;`;
+  const resizeHandle = (axis: ResizeAxis, label: string) => (
+    <button
+      aria-label={label}
+      aria-orientation={axis.endsWith("Vertical") ? "vertical" : "horizontal"}
+      aria-valuenow={Math.round((axis === "topVertical" ? layout.topX : axis === "bottomVertical" ? layout.bottomX :
+        axis === "leftHorizontal" ? layout.leftY : layout.rightY) * 100)}
+      className={`workspace-resizer resizer-${axis}`}
+      onDblClick={reset}
+      onKeyDown={(event) => keyboardResize(axis, event)}
+      onPointerCancel={stop}
+      onPointerDown={(event) => start(axis, event)}
+      onPointerMove={move}
+      onPointerUp={stop}
+      role="separator"
+      tabIndex={0}
+      title="Перетащить для изменения размера. Двойной щелчок — сброс."
+      type="button"
+    />
+  );
   useEffect(() => {
     const stopArm = initializeArmConnection();
     const stopRover = initializeRoverConnection();
@@ -50,7 +76,7 @@ export function App() {
     <main className="console-shell rukahod-shell">
       <HeaderBar />
 
-      <section className="unified-workspace">
+      <section className="unified-workspace" ref={workspaceRef} style={layoutStyle}>
         <div className="top-stage">
           <div className={`unified-cameras${oneCollapsed ? " has-collapsed" : ""}${settingsOpen.value ? " settings-hidden" : ""}`}>
             <div className={`camera-slot ${wristCollapsed ? "is-collapsed side-left" : oneCollapsed ? "is-primary" : ""}`}>
@@ -78,6 +104,10 @@ export function App() {
             <SpeedPresetPanel />
           </section>
         </div>
+        {resizeHandle("topVertical", "Ширина камер")}
+        {resizeHandle("bottomVertical", "Ширина панелей управления")}
+        {resizeHandle("leftHorizontal", "Высота камеры манипулятора")}
+        {resizeHandle("rightHorizontal", "Высота фронтальной камеры")}
       </section>
     </main>
   );

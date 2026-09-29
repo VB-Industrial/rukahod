@@ -399,6 +399,159 @@ body {
   gap: clamp(3px, .5vw, 10px);
 }
 
+.workspace-resizer {
+  display: none;
+}
+
+@media (min-width: 1501px) and (min-height: 560px) {
+  .unified-workspace {
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .unified-workspace .top-stage {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .unified-workspace .top-stage .unified-cameras {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .unified-workspace .unified-cameras:not(.has-collapsed) > .camera-slot {
+    position: absolute;
+    top: 0;
+    pointer-events: auto;
+  }
+
+  .unified-workspace .unified-cameras:not(.has-collapsed) > .camera-slot:first-child {
+    left: 0;
+    width: calc(var(--top-split) - var(--gap) / 2);
+    height: calc(var(--left-split) - var(--gap) / 2);
+  }
+
+  .unified-workspace .unified-cameras:not(.has-collapsed) > .camera-slot:last-child {
+    right: 0;
+    width: calc(100% - var(--top-split) - var(--gap) / 2);
+    height: calc(var(--right-split) - var(--gap) / 2);
+  }
+
+  .unified-workspace .unified-cameras.has-collapsed {
+    display: grid;
+    inset: 0 0 auto;
+    height: max(var(--left-split), var(--right-split));
+    pointer-events: auto;
+  }
+
+  .unified-workspace .unified-cameras.has-collapsed > .camera-slot {
+    position: relative;
+    height: 100%;
+  }
+
+  .unified-workspace .service-stage {
+    inset: 0 0 auto;
+    height: max(var(--left-split), var(--right-split));
+    pointer-events: auto;
+  }
+
+  .unified-workspace .unified-controls {
+    display: contents;
+  }
+
+  .unified-workspace .arm-controls,
+  .unified-workspace .rover-controls {
+    position: absolute;
+    bottom: 0;
+  }
+
+  .unified-workspace .arm-controls {
+    left: 0;
+    width: calc(var(--bottom-split) - var(--gap) / 2);
+    top: calc(var(--left-split) + var(--gap) / 2);
+  }
+
+  .unified-workspace .rover-controls {
+    right: 0;
+    width: calc(100% - var(--bottom-split) - var(--gap) / 2);
+    top: calc(var(--right-split) + var(--gap) / 2);
+  }
+
+  .workspace-resizer {
+    display: block;
+    position: absolute;
+    z-index: 5;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .workspace-resizer::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 4px;
+    background: rgba(125, 181, 255, .23);
+    transition: background .15s ease;
+  }
+
+  .workspace-resizer:hover::after,
+  .workspace-resizer:focus-visible::after {
+    background: var(--accent);
+  }
+
+  .workspace-resizer:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 1px;
+  }
+
+  .resizer-topVertical,
+  .resizer-bottomVertical {
+    width: var(--gap);
+    margin-left: calc(var(--gap) / -2);
+    cursor: col-resize;
+  }
+
+  .resizer-topVertical {
+    left: var(--top-split);
+    top: 0;
+    height: min(var(--left-split), var(--right-split));
+  }
+
+  .resizer-bottomVertical {
+    left: var(--bottom-split);
+    bottom: 0;
+    height: calc(100% - max(var(--left-split), var(--right-split)));
+  }
+
+  .resizer-leftHorizontal,
+  .resizer-rightHorizontal {
+    height: var(--gap);
+    margin-top: calc(var(--gap) / -2);
+    cursor: row-resize;
+  }
+
+  .resizer-leftHorizontal {
+    left: 0;
+    top: var(--left-split);
+    width: var(--bottom-split);
+  }
+
+  .resizer-rightHorizontal {
+    right: 0;
+    top: var(--right-split);
+    width: calc(100% - var(--bottom-split));
+  }
+}
+
 @media (max-width: 1500px) {
   body {
     overflow-y: auto;
@@ -428,7 +581,7 @@ body {
   }
 }
 
-@media (max-height: 760px) {
+@media (max-height: 559px), (max-width: 1500px) and (max-height: 760px) {
   body {
     overflow-y: auto;
   }
