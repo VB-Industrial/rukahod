@@ -1,0 +1,23 @@
+[Unit]
+Description=RukaHod real rover hardware and ROS controllers
+Wants=network-online.target ethernet-can-rover.service
+After=network-online.target ethernet-can-rover.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosuser
+Group=rosuser
+Environment=ROS_DOMAIN_ID=49
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/usr/bin/python3 /home/rosuser/rukahod/deploy/topton/wait-rover-heartbeats.py
+ExecStart=/bin/bash /home/rosuser/rukahod/deploy/topton/ros-entrypoint.sh ros2 launch silverhand_rover_control silverhand_rover_real.launch.py
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+KillMode=control-group
+TimeoutStartSec=40
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

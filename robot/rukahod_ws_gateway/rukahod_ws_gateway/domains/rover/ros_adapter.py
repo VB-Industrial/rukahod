@@ -14,6 +14,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.client import Client
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import BatteryState, Imu
 from std_srvs.srv import SetBool
 
@@ -55,6 +56,7 @@ class RoverRosAdapter(RobotAdapter):
         self._last_xy: tuple[float, float] | None = None
         self._roll_deg = 0.0
         self._pitch_deg = 0.0
+        self._imu_received_at = 0.0
         self._heading_deg_from_imu: float | None = None
 
     async def start(self, event_sink: EventSink) -> None:
@@ -69,7 +71,7 @@ class RoverRosAdapter(RobotAdapter):
         self._cmd_vel_publisher = self._node.create_publisher(Twist, self._config.rover_cmd_vel_topic, 10)
         self._gate = ControllerGate(self._node, "/rover_controller_manager", "SilverhandRoverSystem", "rover_base_controller")
         self._node.create_subscription(Odometry, self._config.rover_odom_topic, self._on_odometry, 10)
-        self._node.create_subscription(Imu, self._config.rover_imu_topic, self._on_imu, 10)
+        self._node.create_subscription(Imu, self._config.rover_imu_topic, self._on_imu, qos_profile_sensor_data)
         self._node.create_subscription(BatteryState, self._config.rover_battery_topic, self._on_battery_state, 10)
         self._headlights_client = self._node.create_client(SetBool, self._config.rover_headlights_service)
 
@@ -252,7 +254,8 @@ class RoverRosAdapter(RobotAdapter):
         if not self._should_emit_message("odometry"):
             return
         orientation = message.pose.pose.orientation
-        heading_deg = self._heading_deg_from_imu
+        imu_valid = time.monotonic() - self._imu_received_at < 1.0
+        heading_deg = self._heading_deg_from_imu if imu_valid else None
         if heading_deg is None:
             heading_deg = _yaw_from_quaternion_deg(orientation.x, orientation.y, orientation.z, orientation.w)
         x_m = float(message.pose.pose.position.x)
@@ -274,6 +277,7 @@ class RoverRosAdapter(RobotAdapter):
                     "odometer_km": self._odometer_km,
                     "x_m": x_m,
                     "y_m": y_m,
+                    "imu_valid": imu_valid,
                     "roll_deg": self._roll_deg,
                     "pitch_deg": self._pitch_deg,
                 },
@@ -281,6 +285,11 @@ class RoverRosAdapter(RobotAdapter):
         )
 
     def _on_imu(self, message: Imu) -> None:
+        q = message.orientation
+        norm = math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)
+        if message.orientation_covariance[0] < 0 or not math.isfinite(norm) or norm < 0.5:
+            return
+        self._imu_received_at = time.monotonic()
         roll_deg, pitch_deg, heading_deg = _euler_from_quaternion_deg(
             message.orientation.x,
             message.orientation.y,
@@ -300,6 +309,10 @@ class RoverRosAdapter(RobotAdapter):
                 "battery_state",
                 {
                     "percent": percent,
+                    "percent_valid": math.isfinite(message.percentage) and message.percentage >= 0.0 and message.capacity > 0.0,
+                    "charge_ah": float(message.charge),
+                    "capacity_ah": float(message.capacity),
+                    "present": bool(message.present),
                     "voltage_v": float(message.voltage),
                     "current_a": float(message.current),
                 },

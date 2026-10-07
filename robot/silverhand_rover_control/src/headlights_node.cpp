@@ -7,9 +7,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "silverhand_rover_control/cyphal/runtime.hpp"
 #include "std_srvs/srv/set_bool.hpp"
-#include "uavcan/si/unit/angular_velocity/Scalar_1_0.h"
+#include "uavcan/primitive/array/Integer8_1_0.h"
 
-TYPE_ALIAS(AngularVelocityMsg, uavcan_si_unit_angular_velocity_Scalar_1_0)
+TYPE_ALIAS(LightsMsg, uavcan_primitive_array_Integer8_1_0)
 
 namespace
 {
@@ -27,7 +27,7 @@ public:
     declare_parameter<std::string>("can_iface", "vcan1");
     declare_parameter<int>("node_id", 111);
     declare_parameter<int>("queue_len", 1000);
-    declare_parameter<int>("headlights_port_id", 1000);
+    declare_parameter<int>("headlights_port_id", 3000);
 
     use_mock_ = get_parameter("use_mock").as_bool();
     headlights_port_id_ = static_cast<std::uint16_t>(get_parameter("headlights_port_id").as_int());
@@ -102,16 +102,20 @@ private:
       return;
     }
 
-    AngularVelocityMsg::Type message = {.radian_per_second = request->data ? 1.0F : 0.0F};
-    runtime_->interface()->send_msg<AngularVelocityMsg>(&message, headlights_port_id_, &headlights_transfer_id_);
+    LightsMsg::Type message = {};
+    message.value.count = 2;
+    // Relay board: element 0 is the relay, element 1 is the headlight.
+    message.value.elements[0] = request->data ? 1 : 0;
+    message.value.elements[1] = request->data ? 1 : 0;
+    runtime_->interface()->send_msg<LightsMsg>(&message, headlights_port_id_, &headlights_transfer_id_);
     response->success = true;
-    response->message = request->data ? "Headlights enabled" : "Headlights disabled";
+    response->message = request->data ? "Headlights ON command sent" : "Headlights OFF command sent";
   }
 
   std::unique_ptr<silverhand_rover_control::cyphal::Runtime> runtime_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr headlights_service_;
-  std::uint16_t headlights_port_id_{1000};
+  std::uint16_t headlights_port_id_{3000};
   bool use_mock_{false};
   std::size_t loop_counter_{0};
   CanardTransferID headlights_transfer_id_{0};

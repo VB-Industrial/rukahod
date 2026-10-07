@@ -1,0 +1,19 @@
+[Unit]
+Description=RukaHod operator UI HTTP server
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosuser
+Group=rosuser
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m http.server 4175 --bind 0.0.0.0 --directory /home/rosuser/rukahod/ui/dist
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

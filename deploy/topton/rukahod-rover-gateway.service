@@ -1,0 +1,21 @@
+[Unit]
+Description=RukaHod real rover WebSocket endpoint
+Wants=rukahod-rover-control.service
+After=rukahod-rover-control.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosuser
+Group=rosuser
+Environment=ROS_DOMAIN_ID=49
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/bin/bash /home/rosuser/rukahod/deploy/topton/ros-entrypoint.sh ros2 launch rukahod_ws_gateway rover_ros.launch.py
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+KillMode=control-group
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

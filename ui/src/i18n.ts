@@ -9,6 +9,7 @@ function savedLanguage(): Language {
 export const language = signal<Language>(savedLanguage());
 
 const english: Record<string, string> = {
+  "Нет IMU": "No IMU",
   "РукаХод": "RukaRover",
   "Настройки": "Settings",
   "По звеньям": "Joints",

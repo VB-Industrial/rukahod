@@ -107,7 +107,10 @@ def _create_runtime_actions(
              arguments=[name, "--controller-manager", controller_manager_name], output="screen")
         for name in ["joint_state_broadcaster", "rover_base_controller"]
     ]
-    if imu_enabled:
+    imu_telemetry = imu_enabled or (not _is_truthy(use_mock_hardware) and
+        _is_truthy(LaunchConfiguration("use_imu_telemetry").perform(context)) and
+        _detect_imu_available(imu_device_path, imu_vid, imu_pid))
+    if imu_telemetry:
         controller_spawners.append(Node(
             package="controller_manager", executable="spawner",
             arguments=["imu_sensor_broadcaster", "--controller-manager", controller_manager_name],
@@ -306,6 +309,8 @@ def generate_launch_description():
                 default_value=str(ros_control_profile["use_imu_odometry"]),
                 description="IMU odometry mode: auto, true, or false.",
             ),
+            DeclareLaunchArgument("use_imu_telemetry", default_value="true",
+                                  description="Publish USB IMU independently of wheel odometry."),
             robot_state_publisher,
             OpaqueFunction(
                 function=lambda context: _create_runtime_actions(

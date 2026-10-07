@@ -1,6 +1,6 @@
 import { t, tr } from "../../i18n";
 import { formatSpeed } from "../app/viewModel";
-import { commandedAngularRadS, commandedLinearMps, maxAngularSpeed, speedKph, speedPresetMaxAngularRadS, telemetry } from "../store/appState";
+import { batteryLabel, commandedAngularRadS, commandedLinearMps, maxAngularSpeed, speedKph, speedPresetMaxAngularRadS, telemetry } from "../store/appState";
 
 export function TelemetryPanel() {
   const speedPercent = Math.min(Math.abs(speedKph.value) / 24, 1);
@@ -12,7 +12,7 @@ export function TelemetryPanel() {
   return (
     <section className="panel telemetry-panel">
       <div className="telemetry-cluster">
-        <GaugeColumn label={t("Заряд")} value={`${Math.round(telemetry.value.batteryPercent)}%`} fill={batteryPercent} />
+        <GaugeColumn label={t("Заряд")} value={batteryLabel.value} fill={telemetry.value.batteryPercentValid ? batteryPercent : 0} />
 
         <div className="instrument-row">
           <div className="instrument-shell compass-shell">
@@ -65,14 +65,14 @@ export function TelemetryPanel() {
                 <span className="rover-wheel right" />
               </div>
               <div className="mini-dial-center imu-readout horizon-readout">
-                <strong>{telemetry.value.rollDeg.toFixed(0)}°</strong>
-                <span>{telemetry.value.pitchDeg.toFixed(0)}°</span>
+                <strong>{telemetry.value.imuValid ? `${telemetry.value.rollDeg.toFixed(0)}°` : "—"}</strong>
+                <span>{telemetry.value.imuValid ? `${telemetry.value.pitchDeg.toFixed(0)}°` : t("Нет IMU")}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <GaugeColumn label={t("Вольтаж")} value={tr`${telemetry.value.batteryVoltage.toFixed(1)} В`} fill={voltagePercent} />
+        <GaugeColumn label={`${t("Вольтаж")} · ${telemetry.value.batteryCurrent.toFixed(1)} A`} value={tr`${telemetry.value.batteryVoltage.toFixed(1)} В`} fill={voltagePercent} />
       </div>
 
       <div className="command-mini-panel">

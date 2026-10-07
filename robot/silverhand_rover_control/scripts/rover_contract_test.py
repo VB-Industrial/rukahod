@@ -94,8 +94,8 @@ def pump():
             subject = (cid >> 8) & 8191
             if length >= 5 and cid & 127 == 110 and 3001 <= subject <= 3006:
                 commands[subject - 3000] = (struct.unpack_from('<f', raw, 8)[0], time.monotonic())
-            if name == 'vcan_ltest' and subject == 1000 and length >= 5:
-                light_values.append(struct.unpack_from('<f', raw, 8)[0])
+            if name == 'vcan_ltest' and subject == 3000 and length >= 5:
+                light_values.append(tuple(struct.unpack_from('<bb', raw, 10)) if struct.unpack_from('<H', raw, 8)[0] == 2 else None)
 
 def until(predicate, timeout, description):
     end = time.monotonic() + timeout
@@ -144,8 +144,8 @@ try:
         request = SetBool.Request(); request.data = value
         result = call(lights, request)
         assert result.success, result.message
-        until(lambda: float(value) in light_values, 2, 'Missing CAN headlights command')
-    print('PASS headlights SetBool -> subject 1000, float32 1/0', flush=True)
+        until(lambda: (int(value), int(value)) in light_values, 2, 'Missing CAN headlights command')
+    print('PASS headlights SetBool -> subject 3000, Integer8 array [1,1]/[0,0]', flush=True)
     # Hold a simulated command so heartbeat loss must override a real nonzero setpoint.
     velocity = (.15, 0.)
     until(lambda: assert_commands(1., 1., time.monotonic() - .2), 2, 'No command before heartbeat loss')

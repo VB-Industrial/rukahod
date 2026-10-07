@@ -1,0 +1,2 @@
+# USB IMU only; keep RC joystick permissions unchanged.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="cafe", ATTRS{idProduct}=="4004", GROUP="rosuser", MODE="0660"

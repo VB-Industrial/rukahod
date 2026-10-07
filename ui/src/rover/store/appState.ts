@@ -16,6 +16,9 @@ export type TelemetryState = {
   pitchDeg: number;
   batteryPercent: number;
   batteryVoltage: number;
+  batteryCurrent: number;
+  batteryPercentValid: boolean;
+  imuValid: boolean;
   odometerKm: number;
   commandAgeMs: number;
 };
@@ -49,6 +52,9 @@ export const telemetry = signal<TelemetryState>({
   pitchDeg: -1.2,
   batteryPercent: 86,
   batteryVoltage: 25.4,
+  batteryCurrent: 0,
+  batteryPercentValid: true,
+  imuValid: false,
   odometerKm: 16.9,
   commandAgeMs: 0,
 });
@@ -60,7 +66,7 @@ export const safetyState = signal<SafetyState>({
 });
 
 export const speedKph = computed(() => telemetry.value.speedMps * 3.6);
-export const batteryLabel = computed(() => `${Math.round(telemetry.value.batteryPercent)}%`);
+export const batteryLabel = computed(() => telemetry.value.batteryPercentValid ? `${Math.round(telemetry.value.batteryPercent)}%` : "—");
 export const modeLabel = computed(() => translateDriveMode(driveMode.value));
 export const sourceLabel = computed(() => translateInputSource(inputSource.value));
 export const speedPresetLabel = computed(() => translateSpeedPreset(speedPreset.value));
@@ -205,11 +211,13 @@ export function setLinkQuality(nextQuality: LinkQuality): void {
   linkQuality.value = nextQuality;
 }
 
-export function setBattery(percent: number, voltage = telemetry.value.batteryVoltage): void {
+export function setBattery(percent: number, voltage = telemetry.value.batteryVoltage, current = 0, percentValid = true): void {
   telemetry.value = {
     ...telemetry.value,
     batteryPercent: clamp(percent, 0, 100),
     batteryVoltage: voltage,
+    batteryCurrent: current,
+    batteryPercentValid: percentValid,
   };
 }
 
@@ -222,10 +230,12 @@ export function applyOdometry(
   yMeters?: number,
   rollDeg?: number,
   pitchDeg?: number,
+  imuValid = false,
 ): void {
   telemetry.value = {
     ...telemetry.value,
     speedMps,
+    imuValid,
     turnRateRadS,
     headingDeg: normalizeHeading(headingDeg),
     xMeters: xMeters ?? telemetry.value.xMeters,

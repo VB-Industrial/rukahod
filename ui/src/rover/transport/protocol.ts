@@ -109,6 +109,7 @@ export type OdometryMessage = MessageEnvelope<
     y_m?: number;
     roll_deg?: number;
     pitch_deg?: number;
+    imu_valid?: boolean;
   }
 >;
 
@@ -118,6 +119,10 @@ export type BatteryStateMessage = MessageEnvelope<
     percent: number;
     voltage_v?: number;
     current_a?: number;
+    percent_valid?: boolean;
+    charge_ah?: number;
+    capacity_ah?: number;
+    present?: boolean;
   }
 >;
 

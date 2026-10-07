@@ -261,10 +261,11 @@ function handleRobotMessage(message: RobotProtocolMessage) {
         message.payload.y_m,
         message.payload.roll_deg,
         message.payload.pitch_deg,
+        message.payload.imu_valid,
       );
       return;
     case "battery_state":
-      setBattery(message.payload.percent, message.payload.voltage_v);
+      setBattery(message.payload.percent, message.payload.voltage_v, message.payload.current_a, message.payload.percent_valid);
       return;
     case "rover_state":
       roverStateAt.value = Date.now();
