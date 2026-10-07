@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(libcxxcanard REQUIRED)
 find_package(pluginlib REQUIRED)
@@ -89,6 +90,9 @@ ament_target_dependencies(
   std_srvs
 )
 
+add_executable(cmd_vel_stamper src/cmd_vel_stamper.cpp)
+ament_target_dependencies(cmd_vel_stamper geometry_msgs rclcpp)
+
 pluginlib_export_plugin_description_file(hardware_interface silverhand_rover_control.xml)
 
 install(
@@ -109,7 +113,7 @@ install(
 )
 
 install(
-  TARGETS ${PROJECT_NAME}_cyphal ${PROJECT_NAME} power_board_node headlights_node
+  TARGETS ${PROJECT_NAME}_cyphal ${PROJECT_NAME} power_board_node headlights_node cmd_vel_stamper
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}

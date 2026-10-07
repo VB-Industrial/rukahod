@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+
 type SliderRowProps = {
   label: string;
   min: number;
@@ -50,12 +52,12 @@ export function SliderRow(props: SliderRowProps) {
   return (
     <label className={props.disabled ? "slider-row disabled" : "slider-row"}>
       <div className="slider-head">
-        <span>{props.label}</span>
+        <span>{t(props.label)}</span>
         <strong>
           {Number.isInteger(props.displayValue ?? props.value)
             ? props.displayValue ?? props.value
             : (props.displayValue ?? props.value).toFixed(2)}
-          {props.unit}
+          {t(props.unit)}
         </strong>
       </div>
       <input

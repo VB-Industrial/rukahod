@@ -1,22 +1,23 @@
+import { t } from "../i18n";
 export const JOINT_LABELS = ["Звено 1", "Звено 2", "Звено 3", "Звено 4", "Звено 5", "Звено 6"];
 export const TCP_LABELS = ["X", "Y", "Z", "Крен", "Тангаж", "Рыскание"];
 
 export function translateState(state: string): string {
   switch (state) {
     case "idle":
-      return "Ожидание";
+      return t("Ожидание");
     case "preview":
-      return "Предпросмотр";
+      return t("Предпросмотр");
     case "target_locked":
-      return "Цель зафиксирована";
+      return t("Цель зафиксирована");
     case "executing":
-      return "Выполнение";
+      return t("Выполнение");
     case "stopped":
-      return "Остановлено";
+      return t("Остановлено");
     case "estop_active":
-      return "Аварийный стоп";
+      return t("Аварийный стоп");
     case "fault":
-      return "Ошибка";
+      return t("Ошибка");
     default:
       return state;
   }
@@ -25,11 +26,11 @@ export function translateState(state: string): string {
 export function translateSource(source: string): string {
   switch (source) {
     case "joystick":
-      return "Джойстик";
+      return t("Джойстик");
     case "keyboard_mouse":
-      return "Клавиатура + мышь";
+      return t("Клавиатура + мышь");
     case "sliders":
-      return "Слайдеры";
+      return t("Слайдеры");
     default:
       return source;
   }
@@ -38,15 +39,15 @@ export function translateSource(source: string): string {
 export function translateInteractionMode(mode: string): string {
   switch (mode) {
     case "idle":
-      return "Ожидание";
+      return t("Ожидание");
     case "servo_joystick":
-      return "Джойстик";
+      return t("Джойстик");
     case "planner_gizmo":
       return "Gizmo";
     case "planner_joint":
-      return "Звенья";
+      return t("Звенья");
     case "planner_tcp":
-      return "Рабочая точка";
+      return t("Рабочая точка");
     default:
       return mode;
   }

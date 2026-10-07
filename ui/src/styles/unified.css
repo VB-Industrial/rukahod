@@ -637,3 +637,31 @@ body {
     min-height: 260px;
   }
 }
+
+/* The language selector shares the brand area without changing workspace height. */
+.rukahod-shell .topbar {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.rukahod-shell .topbar-brand { gap: clamp(8px, .7vw, 14px); }
+.language-switch {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.language-switch button {
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.language-switch button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #171b20;
+  font-weight: 700;
+}
+.language-switch button:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; }

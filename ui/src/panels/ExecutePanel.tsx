@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import {
   canExecute,
   canReset,
@@ -12,24 +13,24 @@ export function ExecutePanel() {
   return (
     <section className="panel execute-panel">
       <div className="panel-head">
-        <h2>Манипулятор</h2>
+        <h2>{t("Манипулятор")}</h2>
       </div>
 
       <div className="execution-actions">
         <button className="execute-action" disabled={!canExecute.value || !armTelemetryReady.value} onClick={sendLockedTargetToRobot} type="button">
-          Движение
+          {t("Движение")}
         </button>
         <button className="secondary-action" disabled={!canStop.value} onClick={sendStopToRobot} type="button">
-          Стоп
+          {t("Стоп")}
         </button>
         <button className="secondary-action" disabled={!canReset.value} onClick={resetState} type="button">
-          Сброс
+          {t("Сброс")}
         </button>
       </div>
 
       <div className="estop-actions">
         <button className="kill-switch inline" onClick={sendEstopToRobot} type="button">
-          <span>Авария</span>
+          <span>{t("Авария")}</span>
         </button>
         <button
           className="secondary-action danger-outline"
@@ -37,7 +38,7 @@ export function ExecutePanel() {
           onClick={sendResetEstopToRobot}
           type="button"
         >
-          Сброс Аварии
+          {t("Сброс Аварии")}
         </button>
       </div>
     </section>

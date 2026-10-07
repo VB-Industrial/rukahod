@@ -30,6 +30,7 @@ def generate_launch_description():
     queue_len = LaunchConfiguration("queue_len")
     use_imu_odometry = LaunchConfiguration("use_imu_odometry")
     use_power_board = LaunchConfiguration("use_power_board")
+    use_headlights = LaunchConfiguration("use_headlights")
     power_board_client_node_id = LaunchConfiguration("power_board_client_node_id")
     power_board_config = PathJoinSubstitution(
         [FindPackageShare("silverhand_rover_control"), "config", "power_board.yaml"]
@@ -52,7 +53,7 @@ def generate_launch_description():
                 ),
             ),
             DeclareLaunchArgument("node_id", default_value=str(ros_control_profile["node_id"])),
-            DeclareLaunchArgument("heartbeat_node_ids", default_value=""),
+            DeclareLaunchArgument("heartbeat_node_ids", default_value=str(ros_control_profile["heartbeat_node_ids"])),
             DeclareLaunchArgument("heartbeat_timeout_ms", default_value="3000"),
             DeclareLaunchArgument("queue_len", default_value=str(ros_control_profile["queue_len"])),
             DeclareLaunchArgument("use_imu_odometry", default_value=str(ros_control_profile["use_imu_odometry"])),
@@ -60,6 +61,7 @@ def generate_launch_description():
                 "use_power_board",
                 default_value=str(ros_control_profile["use_power_board"]).lower(),
             ),
+            DeclareLaunchArgument("use_headlights", default_value="true"),
             DeclareLaunchArgument(
                 "power_board_client_node_id",
                 default_value=str(ros_control_profile["power_board_client_node_id"]),
@@ -100,15 +102,15 @@ def generate_launch_description():
                 executable="headlights_node",
                 output="screen",
                 parameters=[
+                    power_board_config,
                     {
                         "use_mock": False,
                         "can_iface": headlights_can_iface,
                         "queue_len": queue_len,
                         "node_id": power_board_client_node_id,
                     },
-                    power_board_config,
                 ],
-                condition=IfCondition(use_power_board),
+                condition=IfCondition(use_headlights),
             ),
         ]
     )

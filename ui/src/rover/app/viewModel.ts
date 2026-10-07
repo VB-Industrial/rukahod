@@ -1,9 +1,10 @@
+import { t, tr } from "../../i18n";
 import type { CameraStatus } from "../camera/cameraTypes";
 import type { LinkQuality } from "../store/appState";
 import type { DriveMode } from "../transport/protocol";
 
 export function formatSpeed(speedKph: number): string {
-  return `${Math.round(speedKph)} км/ч`;
+  return tr`${Math.round(speedKph)} км/ч`;
 }
 
 export function formatHeading(headingDeg: number): string {
@@ -11,19 +12,19 @@ export function formatHeading(headingDeg: number): string {
 }
 
 export function formatBattery(voltage: number, percent: number): string {
-  return `${percent.toFixed(0)}% / ${voltage.toFixed(1)} В`;
+  return tr`${percent.toFixed(0)}% / ${voltage.toFixed(1)} В`;
 }
 
 export function translateDriveMode(mode: DriveMode): string {
   switch (mode) {
     case "manual":
-      return "Ручной";
+      return t("Ручной");
     case "crab":
-      return "Крабовый";
+      return t("Крабовый");
     case "precision":
-      return "Точный";
+      return t("Точный");
     case "docking":
-      return "Швартовка";
+      return t("Швартовка");
     default:
       return mode;
   }
@@ -32,13 +33,13 @@ export function translateDriveMode(mode: DriveMode): string {
 export function translateLinkQuality(quality: LinkQuality): string {
   switch (quality) {
     case "offline":
-      return "нет";
+      return t("нет");
     case "weak":
-      return "слабая";
+      return t("слабая");
     case "stable":
-      return "стабильная";
+      return t("стабильная");
     case "strong":
-      return "сильная";
+      return t("сильная");
     default:
       return quality;
   }
@@ -47,19 +48,19 @@ export function translateLinkQuality(quality: LinkQuality): string {
 export function translateCameraStatus(status: CameraStatus): string {
   switch (status) {
     case "idle":
-      return "Ожидание";
+      return t("Ожидание");
     case "connecting":
-      return "Подключение";
+      return t("Подключение");
     case "live":
       return "LIVE";
     case "reconnecting":
-      return "Переподключение";
+      return t("Переподключение");
     case "disabled":
-      return "Выключена";
+      return t("Выключена");
     case "error":
-      return "Ошибка";
+      return t("Ошибка");
     case "unconfigured":
-      return "Не настроена";
+      return t("Не настроена");
     default:
       return status;
   }

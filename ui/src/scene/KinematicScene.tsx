@@ -1,3 +1,4 @@
+import { t, translateMessage } from "../i18n";
 import { useEffect, useRef, useState } from "preact/hooks";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -647,7 +648,7 @@ export function KinematicScene(props: KinematicSceneProps) {
     <div className="model-canvas-shell" ref={hostRef}>
       {loadState !== "ready" ? (
         <div className="model-loading-overlay">
-          <span>{loadState === "error" ? errorMessage ?? "Ошибка загрузки модели" : "Загрузка URDF..."}</span>
+          <span>{loadState === "error" ? translateMessage(errorMessage ?? "Ошибка загрузки модели") : t("Загрузка URDF...")}</span>
         </div>
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { language, setLanguage, t } from "../i18n";
 import { cameraSummary } from "../camera/cameraStore";
 import { safetyState as armSafety } from "../store/appState";
 import { settingsOpen, toggleSettings } from "../store/uiState";
@@ -14,15 +15,23 @@ export function HeaderBar() {
 
   return (
     <header className="topbar panel">
-      <div className="topbar-brand"><h1>РукаХод</h1></div>
+      <div className="topbar-brand">
+        <h1>{t("РукаХод")}</h1>
+        <div className="language-switch" role="group" aria-label={t("Язык интерфейса")}>
+          {(["ru", "en"] as const).map((locale) => (
+            <button type="button" key={locale} aria-pressed={language.value === locale}
+              onClick={() => setLanguage(locale)}>{locale.toUpperCase()}</button>
+          ))}
+        </div>
+      </div>
       <div className="topbar-status">
-        <HeaderBadge label="Камеры" value={`${cameraCount}/${cameraTotal} live`} accent={cameraCount === cameraTotal ? "green" : cameraCount === 0 ? "red" : "amber"} />
-        <HeaderBadge label="Манипулятор" value={armReady ? "Готов" : armConnection.value === "connected" ? "Ожидание руки" : "Нет связи"} accent={armReady ? "green" : armConnection.value === "error" ? "red" : "amber"} />
-        <HeaderBadge label="Ровер" value={roverReady ? "Готов" : roverConnection.value === "connected" ? "Ожидание ровера" : "Нет связи"} accent={roverReady ? "green" : roverConnection.value === "error" ? "red" : "amber"} />
-        <HeaderBadge label="Ошибки" value={hasErrors ? "Есть" : "Нет"} accent={hasErrors ? "red" : "green"} />
+        <HeaderBadge label={t("Камеры")} value={`${cameraCount}/${cameraTotal} ${t("В эфире")}`} accent={cameraCount === cameraTotal ? "green" : cameraCount === 0 ? "red" : "amber"} />
+        <HeaderBadge label={t("Манипулятор")} value={armReady ? t("Готов") : armConnection.value === "connected" ? t("Ожидание руки") : t("Нет связи")} accent={armReady ? "green" : armConnection.value === "error" ? "red" : "amber"} />
+        <HeaderBadge label={t("Ровер")} value={roverReady ? t("Готов") : roverConnection.value === "connected" ? t("Ожидание ровера") : t("Нет связи")} accent={roverReady ? "green" : roverConnection.value === "error" ? "red" : "amber"} />
+        <HeaderBadge label={t("Ошибки")} value={hasErrors ? t("Есть") : t("Нет")} accent={hasErrors ? "red" : "green"} />
         <button className={`header-badge settings-toggle ${settingsOpen.value ? "is-active" : ""}`} onClick={toggleSettings} aria-pressed={settingsOpen.value} type="button">
-          <span>Настройка</span>
-          <strong>{settingsOpen.value ? "К камерам" : "Открыть"}</strong>
+          <span>{t("Настройка")}</span>
+          <strong>{settingsOpen.value ? t("К камерам") : t("Открыть")}</strong>
         </button>
       </div>
     </header>

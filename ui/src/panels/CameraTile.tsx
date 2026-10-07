@@ -1,3 +1,4 @@
+import { t, translateMessage } from "../i18n";
 import { useEffect, useRef } from "preact/hooks";
 
 import {
@@ -28,12 +29,12 @@ export function CameraTile({ cameraId, compact = false }: CameraTileProps) {
     <section className={compact ? "panel camera-card camera-card-compact" : "panel camera-card"}>
       <div className={compact ? "panel-head camera-panel-head compact" : "panel-head camera-panel-head"}>
         <div className="camera-head-copy">
-          <h2 className="camera-title">{state.title}</h2>
+          <h2 className="camera-title">{t(state.title)}</h2>
           {compact ? null : <p className="camera-subtext">{statusLabel(state.status)}</p>}
         </div>
         <div className="camera-actions">
           <button className="ghost-button" onClick={() => toggleCameraCollapsed(cameraId)} type="button">
-            {state.collapsed ? "Развернуть" : "Свернуть"}
+            {state.collapsed ? t("Развернуть") : t("Свернуть")}
           </button>
           {compact ? null : (
             <button
@@ -42,8 +43,8 @@ export function CameraTile({ cameraId, compact = false }: CameraTileProps) {
               onClick={() => reconnectCamera(cameraId)}
               type="button"
             >
-              Переподключить
-            </button>
+              {t("Переподключить")}
+        </button>
           )}
         </div>
       </div>
@@ -52,7 +53,7 @@ export function CameraTile({ cameraId, compact = false }: CameraTileProps) {
         <div className={`camera-placeholder ${placeholderTone(state)}`}>
           <video className="camera-video" muted playsInline ref={videoRef} />
           <div className="camera-overlay">
-            <span>{statusOverlay(state.status, state.lastError)}</span>
+            <span>{translateMessage(statusOverlay(state.status, state.lastError))}</span>
           </div>
         </div>
       )}
@@ -74,19 +75,19 @@ function placeholderTone(state: typeof cameraStates.value[CameraId]): string {
 function statusLabel(status: CameraStatus): string {
   switch (status) {
     case "idle":
-      return "Готова к запуску";
+      return t("Готова к запуску");
     case "connecting":
-      return "Подключение";
+      return t("Подключение");
     case "live":
-      return "Поток активен";
+      return t("Поток активен");
     case "reconnecting":
-      return "Переподключение";
+      return t("Переподключение");
     case "disabled":
-      return "Отключена";
+      return t("Отключена");
     case "error":
-      return "Ошибка";
+      return t("Ошибка");
     case "unconfigured":
-      return "Не настроена";
+      return t("Не настроена");
     default:
       return status;
   }
@@ -95,19 +96,19 @@ function statusLabel(status: CameraStatus): string {
 function statusOverlay(status: CameraStatus, lastError: string | null): string {
   switch (status) {
     case "live":
-      return "LIVE";
+      return t("В эфире");
     case "connecting":
-      return "Подключение...";
+      return t("Подключение...");
     case "reconnecting":
-      return "Переподключение...";
+      return t("Переподключение...");
     case "disabled":
-      return "Камера отключена";
+      return t("Камера отключена");
     case "unconfigured":
-      return "WHEP URL не настроен";
+      return t("WHEP URL не настроен");
     case "error":
-      return lastError ?? "Ошибка камеры";
+      return lastError ?? t("Ошибка камеры");
     case "idle":
-      return "Ожидание";
+      return t("Ожидание");
     default:
       return status;
   }

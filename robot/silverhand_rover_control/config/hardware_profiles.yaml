@@ -15,12 +15,15 @@ profiles:
     imu_pid: 16388
     imu_report_size: 64
   ros_control:
-    can_iface: vcan2.1
-    power_board_can_iface: vcan2.2
-    headlights_can_iface: vcan2.6
+    # Verified on Topton: drive nodes 1–6, power board 9, headlights 7.
+    heartbeat_node_ids: "1,2,3,4,5,6"
+    can_iface: vcan2.0
+    power_board_can_iface: vcan2.1
+    headlights_can_iface: vcan2.2
     node_id: 110
     queue_len: 1000
-    use_imu_odometry: auto
+    # This deployment first validates wheels and lights; IMU integration follows separately.
+    use_imu_odometry: "false"
     use_power_board: true
     power_board_client_node_id: 111
     imu_name: imu_sensor

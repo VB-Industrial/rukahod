@@ -1,3 +1,4 @@
+import { t, tr } from "../i18n";
 import { useState } from "preact/hooks";
 import { formatNumber } from "../app/viewModel";
 import { KinematicScene } from "../scene/KinematicScene";
@@ -22,10 +23,10 @@ export function KinematicViewportPanel() {
     target: [previewTarget.value.tcp[0], previewTarget.value.tcp[1], previewTarget.value.tcp[2]] as [number, number, number],
   });
 
-  const currentOrientation = `Крен ${formatNumber(realTarget.value.tcp[3])} / Тангаж ${formatNumber(realTarget.value.tcp[4])} / Рыскание ${formatNumber(
+  const currentOrientation = tr`Крен ${formatNumber(realTarget.value.tcp[3])} / Тангаж ${formatNumber(realTarget.value.tcp[4])} / Рыскание ${formatNumber(
     realTarget.value.tcp[5],
   )}°`;
-  const targetOrientation = `Крен ${formatNumber(previewTarget.value.tcp[3])} / Тангаж ${formatNumber(
+  const targetOrientation = tr`Крен ${formatNumber(previewTarget.value.tcp[3])} / Тангаж ${formatNumber(
     previewTarget.value.tcp[4],
   )} / Рыскание ${formatNumber(previewTarget.value.tcp[5])}°`;
 
@@ -55,20 +56,18 @@ export function KinematicViewportPanel() {
           onTargetTcpChange={updateTcpPositionFromGizmo}
         />
         <div className="pose-readout current">
-          <span className="pose-tag current">Текущее положение</span>
+          <span className="pose-tag current">{t("Текущее положение")}</span>
           <div className="pose-inline-card">
             <strong>
-              X {formatNumber(tcpPosition.real[0])} / Y {formatNumber(tcpPosition.real[1])} / Z {formatNumber(tcpPosition.real[2])} м
-            </strong>
+              X {formatNumber(tcpPosition.real[0])} / Y {formatNumber(tcpPosition.real[1])} / Z {formatNumber(tcpPosition.real[2])} {t("м")}</strong>
             <small>{currentOrientation}</small>
           </div>
         </div>
         <div className="pose-readout target">
-          <span className="pose-tag target">Цель</span>
+          <span className="pose-tag target">{t("Цель")}</span>
           <div className="pose-inline-card target">
             <strong>
-              X {formatNumber(tcpPosition.target[0])} / Y {formatNumber(tcpPosition.target[1])} / Z {formatNumber(tcpPosition.target[2])} м
-            </strong>
+              X {formatNumber(tcpPosition.target[0])} / Y {formatNumber(tcpPosition.target[1])} / Z {formatNumber(tcpPosition.target[2])} {t("м")}</strong>
             <small>{targetOrientation}</small>
           </div>
         </div>

@@ -1,21 +1,22 @@
+import { t } from "../../i18n";
 import { commandAngular, commandLinear, commandTurbo } from "../store/appState";
 
 export function DriveCommandPanel() {
   return (
     <section className="panel command-panel">
       <div className="panel-head">
-        <h2>Команда движения</h2>
+        <h2>{t("Команда движения")}</h2>
         <span className="muted-text">WASD / left stick</span>
       </div>
 
       <div className="command-meters">
-        <CommandMeter label="Линейная" value={commandLinear.value} />
-        <CommandMeter label="Угловая" value={commandAngular.value} />
+        <CommandMeter label={t("Линейная")} value={commandLinear.value} />
+        <CommandMeter label={t("Угловая")} value={commandAngular.value} />
       </div>
 
       <div className="command-footer">
         <span>Boost</span>
-        <strong>{commandTurbo.value ? "включён" : "выключен"}</strong>
+        <strong>{commandTurbo.value ? t("включён") : t("выключен")}</strong>
       </div>
     </section>
   );

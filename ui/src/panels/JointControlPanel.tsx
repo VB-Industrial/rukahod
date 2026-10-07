@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { JOINT_LABELS } from "../app/viewModel";
 import { editingDisabled, interactionMode, previewTarget, setControlMode, setInteractionMode, updateJoint } from "../store/appState";
 import { SliderRow } from "../components/SliderRow";
@@ -13,7 +14,7 @@ export function JointControlPanel() {
       }}
     >
       <div className="panel-head">
-        <h2>Управление звеньями</h2>
+        <h2>{t("Управление звеньями")}</h2>
       </div>
 
       <div className="slider-list">

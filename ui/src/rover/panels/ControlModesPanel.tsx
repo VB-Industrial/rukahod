@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { translateDriveMode } from "../app/viewModel";
 import { cycleDriveMode, driveMode, inputSource, safetyState, setDriveMode } from "../store/appState";
 import type { DriveMode } from "../transport/protocol";
@@ -9,8 +10,8 @@ export function ControlModesPanel() {
   return (
     <section className="panel modes-panel">
       <div className="panel-head">
-        <h2>Режимы</h2>
-        <span className="muted-text">мышь + кнопки + Q/E</span>
+        <h2>{t("Режимы")}</h2>
+        <span className="muted-text">{t("мышь + кнопки + Q/E")}</span>
       </div>
 
       <div className="mode-list">
@@ -30,21 +31,21 @@ export function ControlModesPanel() {
 
       <div className="mode-summary">
         <div>
-          <span>Источник</span>
-          <strong>{inputSource.value === "joystick" ? "Джойстик" : inputSource.value === "mock_autonomy" ? "Mock" : "Клава + мышь"}</strong>
+          <span>{t("Источник")}</span>
+          <strong>{inputSource.value === "joystick" ? t("Джойстик") : inputSource.value === "mock_autonomy" ? "Mock" : t("Клава + мышь")}</strong>
         </div>
         <div>
-          <span>Контроль</span>
-          <strong>{safetyState.value.controlActive ? "Активен" : "Заблокирован"}</strong>
+          <span>{t("Контроль")}</span>
+          <strong>{safetyState.value.controlActive ? t("Активен") : t("Заблокирован")}</strong>
         </div>
       </div>
 
       <div className="mode-actions">
         <button className="secondary-action" onClick={() => cycleDriveMode(-1)} type="button">
-          Предыдущий
+          {t("Предыдущий")}
         </button>
         <button className="secondary-action" onClick={() => cycleDriveMode(1)} type="button">
-          Следующий
+          {t("Следующий")}
         </button>
       </div>
     </section>

@@ -1,11 +1,12 @@
+import { t } from "../../i18n";
 import { gamepadHint, keyboardHint } from "../input/controlStore";
 
 export function InputLegendPanel() {
   return (
     <section className="panel legend-panel">
       <div className="panel-head">
-        <h2>Шпаргалка</h2>
-        <span className="muted-text">операторский набор</span>
+        <h2>{t("Шпаргалка")}</h2>
+        <span className="muted-text">{t("операторский набор")}</span>
       </div>
 
       <div className="legend-grid">
@@ -19,8 +20,8 @@ export function InputLegendPanel() {
 function LegendCard(props: { title: string; text: string }) {
   return (
     <div className="legend-card">
-      <strong>{props.title}</strong>
-      <span>{props.text}</span>
+      <strong>{t(props.title)}</strong>
+      <span>{t(props.text)}</span>
     </div>
   );
 }

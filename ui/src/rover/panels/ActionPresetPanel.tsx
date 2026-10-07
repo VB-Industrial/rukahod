@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { headlightsEnabled, stopModeActive } from "../store/appState";
 import { toggleHeadlightsFromUi, toggleStopModeFromUi } from "../transport/robotConnectionStore";
 
@@ -10,8 +11,8 @@ export function ActionPresetPanel() {
           onClick={() => toggleStopModeFromUi()}
           type="button"
         >
-          <strong>STOP</strong>
-          <span>Space</span>
+          <strong>{t("СТОП")}</strong>
+          <span>{t("Пробел")}</span>
         </button>
 
         <button
@@ -19,7 +20,7 @@ export function ActionPresetPanel() {
           onClick={() => toggleHeadlightsFromUi()}
           type="button"
         >
-          <strong>Свет</strong>
+          <strong>{t("Свет")}</strong>
           <span>F</span>
         </button>
       </div>

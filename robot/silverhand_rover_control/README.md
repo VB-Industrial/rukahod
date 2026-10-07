@@ -190,3 +190,73 @@ journalctl -u silverhand-rover-control@mock.service -f
 - Реальный аппаратный плагин теперь ожидает команды на моторы колес на subject'ах `3000 + motor_id`, а обратную связь - на `3000 - motor_id`.
 - `power_board_node` is a separate Cyphal-facing ROS node for battery telemetry and headlights, keeping power/HMI concerns outside `ros2_control`.
 - `diff_drive_controller` is used as the first integration step. A custom rover controller can replace it later without changing the package split.
+
+
+## Проверенный профиль РукаХод / Topton
+
+Проверен на `brovermax` (ROS 2 Jazzy):
+
+| Назначение | Интерфейс | Узлы / subjects |
+|---|---|---|
+| Шесть приводов | `vcan2.0` | HB 1–6; команды 3001–3006, feedback 2999–2994 |
+| Плата питания | `vcan2.1` | Узел 9, BatteryState 7993 |
+| Фары | `vcan2.2` | Узел 7; AngularVelocity 1000, float32 1/0 |
+
+Все `direction_multiplier=+1`, включая левую сторону, по текущей конфигурации
+прошивки. Геометрия и motor ID сохранены из SilverHand Rover. Входящие heartbeat
+проверяются при активации и каждые 100 циклов write. При 20 Гц и timeout 3 с
+потеря может обнаружиться спустя почти 8 с после последнего HB. При потере HB,
+деактивации и закрытии HW отправляются нулевые скорости. Собственный heartbeat
+хоста публикуется приблизительно раз в секунду, независимо от периода проверки.
+
+Запуск (workspace уже собран):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/rukahod_ws/install/setup.bash
+unset FASTRTPS_DEFAULT_PROFILES_FILE ROS_DISCOVERY_SERVER
+export ROS_DOMAIN_ID=49
+ros2 launch silverhand_rover_control silverhand_rover_real.launch.py use_imu_odometry:=false
+```
+
+HW сначала конфигурируется в inactive; ROS CLI активирует его после
+проверки HB. Только после успешной активации запускаются контроллеры. Без HB
+manager остаётся доступен, аппаратный компонент неактивен, контроллеры не стартуют.
+После подключения оборудования можно повторить активацию и spawner:
+
+```bash
+ros2 control set_hardware_component_state SilverhandRoverSystem active -c /rover_controller_manager
+ros2 run controller_manager spawner joint_state_broadcaster rover_base_controller -c /rover_controller_manager
+```
+
+Контракт движения сохранён: `/rover_base_controller/cmd_vel_unstamped`
+(`geometry_msgs/msg/Twist`), linear.x в м/с, angular.z в рад/с. В Jazzy
+`cmd_vel_stamper` добавляет timestamp и передаёт команду на
+`/rover_base_controller/cmd_vel` (`TwistStamped`). Преобразователь ничего не
+повторяет: при отсутствии входящих команд diff_drive останавливается через 0,5 с.
+
+Фары: `/power_board/set_headlights` (`std_srvs/srv/SetBool`). `use_headlights`
+позволяет запускать фары отдельно от платы питания (`use_power_board`). Ответ
+success подтверждает постановку CAN команды, а не физическое включение лампы.
+
+Диагностика:
+
+```bash
+ros2 control list_hardware_components -c /rover_controller_manager
+ros2 control list_controllers -c /rover_controller_manager
+ros2 topic echo /joint_states --once
+ros2 topic echo /battery_state --once
+```
+
+Контрактный тест использует настоящие HW plugin и контроллеры, но только
+изолированные VCAN. Он проверяет feedback, направление без инверсии, движение,
+поворот, таймаут, фары и отсутствие/потерю HB. На физических шинах его запускать
+нельзя; имена тестовых шин фиксированы, а подключение к EtherCAN проверяется.
+
+```bash
+for iface in vcan_rtest vcan_ptest vcan_ltest; do
+  sudo ip link add "$iface" type vcan
+  sudo ip link set "$iface" up
+done
+python3 ~/rukahod_ws/src/silverhand_rover_control/scripts/rover_contract_test.py
+```

@@ -1,10 +1,11 @@
+import { t } from "../i18n";
 import { controlMode, setControlMode } from "../store/appState";
 
 export function ControlModePanel() {
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2>Режим управления</h2>
+        <h2>{t("Режим управления")}</h2>
       </div>
       <div className="segmented">
         <button
@@ -12,14 +13,14 @@ export function ControlModePanel() {
           onClick={() => setControlMode("joint")}
           type="button"
         >
-          Углы манипулятора
+          {t("Углы манипулятора")}
         </button>
         <button
           className={controlMode.value === "tcp" ? "segment active" : "segment"}
           onClick={() => setControlMode("tcp")}
           type="button"
         >
-          Декартовы координаты
+          {t("Декартовы координаты")}
         </button>
       </div>
     </section>

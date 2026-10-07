@@ -1,11 +1,12 @@
+import { t } from "../../i18n";
 import { speedPreset, type SpeedPreset } from "../store/appState";
 import { applySpeedPresetFromUi } from "../transport/robotConnectionStore";
 
 const PRESETS: Array<{ id: SpeedPreset; label: string; meta: string }> = [
-  { id: "3", label: "3", meta: "max" },
+  { id: "3", label: "3", meta: "Макс." },
   { id: "2", label: "2", meta: "0.5" },
   { id: "1", label: "1", meta: "0.1" },
-  { id: "P", label: "P", meta: "park" },
+  { id: "P", label: "P", meta: "Парк." },
 ];
 
 export function SpeedPresetPanel() {
@@ -19,7 +20,7 @@ export function SpeedPresetPanel() {
             type="button"
           >
             <strong>{preset.label}</strong>
-            <span>{preset.meta}</span>
+            <span>{t(preset.meta)}</span>
           </button>
         ))}
       </div>

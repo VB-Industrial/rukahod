@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { batteryLabel, inputSource, safetyState, speedPresetLabel } from "../store/appState";
 import { robotConnectionState } from "../transport/robotConnectionStore";
 
@@ -12,16 +13,16 @@ export function HeaderBar() {
   return (
     <header className="topbar panel">
       <div className="topbar-status">
-        <HeaderBadge label="Скорость" value={speedPresetLabel.value} accent="amber" />
+        <HeaderBadge label={t("Скорость")} value={speedPresetLabel.value} accent="amber" />
         <HeaderBadge
-          label="Источник"
-          value={inputSource.value === "joystick" ? "Джойстик" : inputSource.value === "mock_autonomy" ? "Mock" : "Клав. + мышь"}
+          label={t("Источник")}
+          value={inputSource.value === "joystick" ? t("Джойстик") : inputSource.value === "mock_autonomy" ? "Mock" : t("Клав. + мышь")}
           accent="blue"
         />
-        <HeaderBadge label="Связь" value={robotConnectionState.value === "connected" ? "ОК" : "НЕТ"} accent={linkAccent} />
-        <HeaderBadge label="Ровер" value={safetyState.value.roverReady ? "готов" : "не готов"} accent={safetyState.value.roverReady ? "green" : "red"} />
-        <HeaderBadge label="Аккумулятор" value={batteryLabel.value} accent={batteryLabel.value === "0%" ? "red" : "green"} />
-        <HeaderBadge label="Ошибки" value={safetyState.value.noFaults ? "нет ошибок" : "есть fault"} accent={safetyState.value.noFaults ? "green" : "red"} />
+        <HeaderBadge label={t("Связь")} value={robotConnectionState.value === "connected" ? t("ОК") : t("НЕТ")} accent={linkAccent} />
+        <HeaderBadge label={t("Ровер")} value={safetyState.value.roverReady ? t("готов") : t("не готов")} accent={safetyState.value.roverReady ? "green" : "red"} />
+        <HeaderBadge label={t("Аккумулятор")} value={batteryLabel.value} accent={batteryLabel.value === "0%" ? "red" : "green"} />
+        <HeaderBadge label={t("Ошибки")} value={safetyState.value.noFaults ? t("нет ошибок") : t("есть fault")} accent={safetyState.value.noFaults ? "green" : "red"} />
       </div>
     </header>
   );
@@ -31,7 +32,7 @@ function HeaderBadge(props: { label: string; value: string; accent: "green" | "a
   return (
     <div className={`header-badge ${props.accent}`}>
       <span>{props.label}</span>
-      <strong>{props.value}</strong>
+      <strong>{t(props.value)}</strong>
     </div>
   );
 }

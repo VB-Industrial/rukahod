@@ -1,17 +1,18 @@
+import { t } from "../i18n";
 import { activateEstop, estopActive, resetEstop } from "../store/appState";
 
 export function KillSwitchPanel() {
   return (
     <section className="panel kill-card">
       <div className="panel-head">
-        <h2>Аварийная остановка</h2>
+        <h2>{t("Аварийная остановка")}</h2>
         <span className={estopActive.value ? "status-dot red" : "status-dot muted"}>
-          {estopActive.value ? "Активен" : "Не активен"}
+          {estopActive.value ? t("Активен") : t("Не активен")}
         </span>
       </div>
 
       <button className="kill-switch" onClick={activateEstop} type="button">
-        <span>АВАРИЙНЫЙ СТОП</span>
+        <span>{t("АВАРИЙНЫЙ СТОП")}</span>
         <small>KILL SWITCH</small>
       </button>
 
@@ -21,8 +22,8 @@ export function KillSwitchPanel() {
         onClick={resetEstop}
         type="button"
       >
-        Сброс аварийного стопа
-      </button>
+        {t("Сброс аварийного стопа")}
+        </button>
     </section>
   );
 }

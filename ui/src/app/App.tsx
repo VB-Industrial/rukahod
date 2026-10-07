@@ -1,3 +1,6 @@
+import { MobileConsole } from "../mobile/MobileConsole";
+import { useMobileLayout } from "../mobile/useMobileLayout";
+import { t } from "../i18n";
 import { useEffect } from "preact/hooks";
 import { CameraTile } from "../panels/CameraTile";
 import { cameraStates } from "../camera/cameraStore";
@@ -19,6 +22,7 @@ import { healthClock, settingsOpen } from "../store/uiState";
 import { useWorkspaceLayout, type ResizeAxis } from "./useWorkspaceLayout";
 
 export function App() {
+  const mobile = useMobileLayout();
   const { workspaceRef, layout, start, move, stop, keyboardResize, reset } = useWorkspaceLayout();
   const wristCollapsed = cameraStates.value.wrist.collapsed;
   const frontCollapsed = cameraStates.value.driver.collapsed;
@@ -43,7 +47,7 @@ export function App() {
       onPointerUp={stop}
       role="separator"
       tabIndex={0}
-      title="Перетащить для изменения размера. Двойной щелчок — сброс."
+      title={t("Перетащить для изменения размера. Двойной щелчок — сброс.")}
       type="button"
     />
   );
@@ -57,7 +61,7 @@ export function App() {
       stopRover();
     };
   }, []);
-  useEffect(() => initializeInputController(), []);
+  useEffect(() => mobile ? undefined : initializeInputController(), [mobile]);
   useEffect(() => {
     let previous = performance.now();
     let frame = 0;
@@ -71,6 +75,8 @@ export function App() {
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  if (mobile) return <MobileConsole />;
 
   return (
     <main className="console-shell rukahod-shell">
@@ -104,10 +110,10 @@ export function App() {
             <SpeedPresetPanel />
           </section>
         </div>
-        {resizeHandle("topVertical", "Ширина камер")}
-        {resizeHandle("bottomVertical", "Ширина панелей управления")}
-        {resizeHandle("leftHorizontal", "Высота камеры манипулятора")}
-        {resizeHandle("rightHorizontal", "Высота фронтальной камеры")}
+        {resizeHandle("topVertical", t("Ширина камер"))}
+        {resizeHandle("bottomVertical", t("Ширина панелей управления"))}
+        {resizeHandle("leftHorizontal", t("Высота камеры манипулятора"))}
+        {resizeHandle("rightHorizontal", t("Высота фронтальной камеры"))}
       </section>
     </main>
   );

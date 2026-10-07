@@ -54,6 +54,7 @@ public:
 
 private:
   bool heartbeat_check_due();
+  void stop_motor_commands();
 
   std::vector<double> wheel_velocity_command_;
   std::vector<double> wheel_position_state_;
@@ -79,7 +80,7 @@ private:
   bool is_configured_{false};
   bool is_active_{false};
   bool imu_device_present_{false};
-  std::size_t write_cycles_since_heartbeat_{0};
+  double heartbeat_publish_elapsed_seconds_{0.0};
 };
 
 }  // namespace silverhand_rover_control

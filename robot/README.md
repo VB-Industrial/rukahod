@@ -8,7 +8,7 @@ WS gateway для руки и ровера находится в [rukahod_ws_gat
 
 После обновления сабмодуля браузерная URDF, лимиты, начальная поза и кинематическая цепочка для FK/IK автоматически пересобираются из RUKA2 при `npm run dev` или `npm run build` в `ui/`. Генератор требует ROS 2 Jazzy с `xacro`; результаты генерируются локально и не хранятся в Git.
 
-Ровер принимает входящие `uavcan.node.Heartbeat`. Параметр `heartbeat_node_ids` обязателен и не имеет значения по умолчанию, пока реальные ID не сверены с устройствами. `heartbeat_timeout_ms` по умолчанию равен `3000`. В активном режиме свежесть проверяется каждый сотый цикл `write()`; текущая конфигурация ровера работает на 20 Гц.
+Ровер принимает входящие `uavcan.node.Heartbeat`. В реальном профиле `heartbeat_node_ids` по умолчанию равен `1,2,3,4,5,6`: эти узлы подтверждены на Топтоне. `heartbeat_timeout_ms` по умолчанию равен `3000`. В активном режиме свежесть проверяется каждый сотый цикл `write()`; текущая конфигурация ровера работает на 20 Гц.
 
 Mock-профили используют `mock_components/GenericSystem` и не требуют Cyphal.
 
@@ -24,4 +24,4 @@ git submodule update --init robot/RUKA2
 colcon build --base-paths robot --packages-select ruka2_description ruka2_control silverhand_rover_control
 ```
 
-Для реального ровера передайте подтверждённые ID аргументом запуска `heartbeat_node_ids:=...`, например строкой с ID через запятую. Аргумент передаётся в xacro; числа `motor_id` из текущего URDF не следует автоматически считать Cyphal node ID.
+Для реального ровера используйте `ros2 launch silverhand_rover_control silverhand_rover_real.launch.py`. Профиль Топтона: приводы `vcan2.0`, питание `vcan2.1`, фары `vcan2.2`. На другом оборудовании переопределите интерфейсы и `heartbeat_node_ids`. Пакет геометрии `silverhand_rover_model` включён в `robot/`.

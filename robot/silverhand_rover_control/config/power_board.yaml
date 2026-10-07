@@ -1,8 +1,8 @@
 power_board_node:
   ros__parameters:
     use_mock: false
-    can_iface: vcan1
-    headlights_can_iface: vcan1
+    can_iface: vcan2.1
+    headlights_can_iface: vcan2.2
     node_id: 111
     queue_len: 1000
     power_board_node_id: 9
@@ -16,3 +16,11 @@ power_board_node:
     mock_battery_capacity_ah: 24.0
     mock_battery_design_capacity_ah: 24.0
     mock_battery_present: true
+
+headlights_node:
+  ros__parameters:
+    use_mock: false
+    can_iface: vcan2.2
+    node_id: 111
+    queue_len: 1000
+    headlights_port_id: 1000

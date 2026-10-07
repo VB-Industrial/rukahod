@@ -1,3 +1,4 @@
+import { t, tr } from "../../i18n";
 import { formatSpeed } from "../app/viewModel";
 import { commandedAngularRadS, commandedLinearMps, maxAngularSpeed, speedKph, speedPresetMaxAngularRadS, telemetry } from "../store/appState";
 
@@ -11,7 +12,7 @@ export function TelemetryPanel() {
   return (
     <section className="panel telemetry-panel">
       <div className="telemetry-cluster">
-        <GaugeColumn label="Заряд" value={`${Math.round(telemetry.value.batteryPercent)}%`} fill={batteryPercent} />
+        <GaugeColumn label={t("Заряд")} value={`${Math.round(telemetry.value.batteryPercent)}%`} fill={batteryPercent} />
 
         <div className="instrument-row">
           <div className="instrument-shell compass-shell">
@@ -26,7 +27,7 @@ export function TelemetryPanel() {
               <div className="compass-pointer" />
               <div className="mini-dial-center">
                 <strong>{telemetry.value.headingDeg.toFixed(0)}°</strong>
-                <span>Курс</span>
+                <span>{t("Курс")}</span>
               </div>
             </div>
           </div>
@@ -71,14 +72,14 @@ export function TelemetryPanel() {
           </div>
         </div>
 
-        <GaugeColumn label="Вольтаж" value={`${telemetry.value.batteryVoltage.toFixed(1)} В`} fill={voltagePercent} />
+        <GaugeColumn label={t("Вольтаж")} value={tr`${telemetry.value.batteryVoltage.toFixed(1)} В`} fill={voltagePercent} />
       </div>
 
       <div className="command-mini-panel">
-        <MiniCommand label="Линейная" value={`${commandedLinearMps.value.toFixed(2)} м/с`} signedPercent={Math.max(-1, Math.min(1, commandedLinearMps.value / 1.0))} />
-        <MiniCommand label="Угловая" value={`${commandedAngularRadS.value.toFixed(2)} рад/с`} signedPercent={Math.max(-1, Math.min(1, -commandedAngularRadS.value / angularLimit))} />
-        <MiniCommand label="X:" value={`${telemetry.value.xMeters.toFixed(2)} м`} signedPercent={Math.max(-1, Math.min(1, telemetry.value.xMeters / 20))} />
-        <MiniCommand label="Y:" value={`${telemetry.value.yMeters.toFixed(2)} м`} signedPercent={Math.max(-1, Math.min(1, telemetry.value.yMeters / 20))} />
+        <MiniCommand label={t("Линейная")} value={tr`${commandedLinearMps.value.toFixed(2)} м/с`} signedPercent={Math.max(-1, Math.min(1, commandedLinearMps.value / 1.0))} />
+        <MiniCommand label={t("Угловая")} value={tr`${commandedAngularRadS.value.toFixed(2)} рад/с`} signedPercent={Math.max(-1, Math.min(1, -commandedAngularRadS.value / angularLimit))} />
+        <MiniCommand label="X:" value={tr`${telemetry.value.xMeters.toFixed(2)} м`} signedPercent={Math.max(-1, Math.min(1, telemetry.value.xMeters / 20))} />
+        <MiniCommand label="Y:" value={tr`${telemetry.value.yMeters.toFixed(2)} м`} signedPercent={Math.max(-1, Math.min(1, telemetry.value.yMeters / 20))} />
       </div>
     </section>
   );

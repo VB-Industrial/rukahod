@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { useEffect, useState } from "preact/hooks";
 import { TCP_LABELS } from "../app/viewModel";
 import {
@@ -53,7 +54,7 @@ export function TcpControlPanel() {
       }}
     >
       <div className="panel-head">
-        <h2>Управление рабочей точкой</h2>
+        <h2>{t("Управление рабочей точкой")}</h2>
       </div>
 
       <div className="slider-list">
@@ -64,7 +65,7 @@ export function TcpControlPanel() {
             min={-1}
             max={1}
             step={0.01}
-            unit="м"
+            unit={t("м")}
             value={value}
             disabled={editingDisabled.value}
             onInput={(next) => updateTcp(index, next)}

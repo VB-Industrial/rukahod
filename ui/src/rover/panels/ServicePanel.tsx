@@ -1,3 +1,4 @@
+import { t, translateMessage } from "../../i18n";
 import { useState } from "preact/hooks";
 
 import { safetyState } from "../store/appState";
@@ -25,13 +26,13 @@ export function ServicePanel() {
   return (
     <section className={collapsed ? "panel service-bar service-bar-collapsed" : "panel service-bar"}>
       <div className="service-bar-label">
-        <span className="section-overline">Сервис</span>
-        <strong>Mock, отладка и сеть</strong>
+        <span className="section-overline">{t("Сервис")}</span>
+        <strong>{t("Mock, отладка и сеть")}</strong>
       </div>
 
       <div className="service-bar-toggle">
         <button className="secondary-action" onClick={() => setCollapsed((value) => !value)} type="button">
-          {collapsed ? "Показать отладочную панель" : "Скрыть отладочную панель"}
+          {collapsed ? t("Показать отладочную панель") : t("Скрыть отладочную панель")}
         </button>
       </div>
 
@@ -59,19 +60,19 @@ export function ServicePanel() {
               }}
               type="button"
             >
-              {connectionState.value === "connected" || connectionState.value === "connecting" ? "Отключить WS" : "Подключить WS"}
+              {connectionState.value === "connected" || connectionState.value === "connecting" ? t("Отключить WS") : t("Подключить WS")}
             </button>
 
             <button className="secondary-action" onClick={reconnectRobot} type="button">
-              Переподключить WS
-            </button>
+              {t("Переподключить WS")}
+        </button>
 
             <button
               className={mockEnabled.value ? "secondary-action accent-amber" : "secondary-action"}
               onClick={toggleMockBackend}
               type="button"
             >
-              {mockEnabled.value ? "Выключить mock" : "Включить mock"}
+              {mockEnabled.value ? t("Выключить mock") : t("Включить mock")}
             </button>
 
             <button className="secondary-action" onClick={stopMotionFromUi} type="button">
@@ -83,7 +84,7 @@ export function ServicePanel() {
               onClick={safetyState.value.estopActive ? resetEstopFromUi : activateEstopFromUi}
               type="button"
             >
-              {safetyState.value.estopActive ? "Сбросить E-STOP" : "E-STOP"}
+              {safetyState.value.estopActive ? t("Сбросить E-STOP") : "E-STOP"}
             </button>
 
             <button
@@ -91,17 +92,17 @@ export function ServicePanel() {
               onClick={safetyState.value.noFaults ? simulateFault : resetFault}
               type="button"
             >
-              {safetyState.value.noFaults ? "Сымитировать fault" : "Сбросить fault"}
+              {safetyState.value.noFaults ? t("Сымитировать fault") : t("Сбросить fault")}
             </button>
           </div>
 
           <div className="service-status-block">
-            <span className="service-status-text">{robotConnectionError.value || robotBackendStatus.value || "Статус backend появится после первого события."}</span>
+            <span className="service-status-text">{translateMessage(robotConnectionError.value || robotBackendStatus.value || "Статус backend появится после первого события.")}</span>
             {robotBackendLog.value.length > 0 ? (
               <div className="service-status-log">
                 {robotBackendLog.value.map((entry) => (
-                  <div className={`service-log-entry service-log-entry-${entry.level}`} key={`${entry.timestamp}-${entry.text}`}>
-                    {entry.text}
+                  <div className={`service-log-entry service-log-entry-${entry.level}`} key={`${entry.timestamp}-${translateMessage(entry.text)}`}>
+                    {translateMessage(entry.text)}
                   </div>
                 ))}
               </div>

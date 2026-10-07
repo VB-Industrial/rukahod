@@ -185,7 +185,10 @@ int16_t read_int16_le(const uint8_t * data)
 namespace silverhand_rover_control
 {
 
-SilverhandRoverSystem::~SilverhandRoverSystem() = default;
+SilverhandRoverSystem::~SilverhandRoverSystem()
+{
+  stop_motor_commands();
+}
 
 CallbackReturn SilverhandRoverSystem::on_init(
   const hardware_interface::HardwareInfo & hardware_info)
@@ -261,7 +264,7 @@ CallbackReturn SilverhandRoverSystem::on_init(
   is_configured_ = false;
   is_active_ = false;
   imu_device_present_ = false;
-  write_cycles_since_heartbeat_ = 0U;
+  heartbeat_publish_elapsed_seconds_ = 0.0;
 
   RCLCPP_INFO(
     get_logger(),
@@ -300,15 +303,15 @@ CallbackReturn SilverhandRoverSystem::on_configure(
   if (hid_init() == 0) {
     hid_device_info * imu_info = hid_enumerate(imu_vid_, imu_pid_);
     if (imu_info != nullptr) {
-      const char * imu_path = imu_device_path_.empty() ? imu_info->path : imu_device_path_.c_str();
-      imu_device_handle_ = hid_open_path(imu_path);
+      const std::string imu_path = imu_device_path_.empty() ? imu_info->path : imu_device_path_;
+      imu_device_handle_ = hid_open_path(imu_path.c_str());
       imu_device_present_ = (imu_device_handle_ != nullptr);
       hid_free_enumeration(imu_info);
       if (!imu_device_present_) {
         RCLCPP_WARN(
           get_logger(),
           "IMU HID device was detected but could not be opened on path '%s'; wheel odometry fallback remains available",
-          imu_path);
+          imu_path.c_str());
       }
     } else {
       RCLCPP_WARN(
@@ -355,9 +358,10 @@ CallbackReturn SilverhandRoverSystem::on_activate(
     return CallbackReturn::FAILURE;
   }
 
+  std::fill(wheel_velocity_command_.begin(), wheel_velocity_command_.end(), 0.0);
   is_active_ = true;
   heartbeat_check_counter_ = 0;
-  write_cycles_since_heartbeat_ = 0U;
+  heartbeat_publish_elapsed_seconds_ = 0.0;
   RCLCPP_INFO(
     get_logger(),
     "Activated rover hardware '%s' on interface %s node_id=%u",
@@ -370,6 +374,7 @@ CallbackReturn SilverhandRoverSystem::on_activate(
 CallbackReturn SilverhandRoverSystem::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
+  stop_motor_commands();
   is_active_ = false;
   return CallbackReturn::SUCCESS;
 }
@@ -377,6 +382,7 @@ CallbackReturn SilverhandRoverSystem::on_deactivate(
 CallbackReturn SilverhandRoverSystem::on_cleanup(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
+  stop_motor_commands();
 #if SILVERHAND_ROVER_HAS_HIDAPI
   if (imu_device_handle_ != nullptr) {
     hid_close(to_hid_device(imu_device_handle_));
@@ -509,7 +515,7 @@ hardware_interface::return_type SilverhandRoverSystem::read(
 
 hardware_interface::return_type SilverhandRoverSystem::write(
   const rclcpp::Time & /*time*/,
-  const rclcpp::Duration & /*period*/)
+  const rclcpp::Duration & period)
 {
   if (!is_active_) {
     return hardware_interface::return_type::OK;
@@ -518,6 +524,7 @@ hardware_interface::return_type SilverhandRoverSystem::write(
   if (!cyphal_runtime_ || (heartbeat_check_due() && !cyphal_runtime_->heartbeat_ready(
       heartbeat_node_ids_, std::chrono::milliseconds(heartbeat_timeout_ms_))))
   {
+    stop_motor_commands();
     is_active_ = false;
     RCLCPP_ERROR(get_logger(), "Rover heartbeat lost; stopping hardware commands");
     return hardware_interface::return_type::ERROR;
@@ -527,10 +534,10 @@ hardware_interface::return_type SilverhandRoverSystem::write(
     motor_io_->publish_commands(wheel_velocity_command_);
   }
 
-  ++write_cycles_since_heartbeat_;
-  if (cyphal_runtime_ && write_cycles_since_heartbeat_ >= 100U) {
+  heartbeat_publish_elapsed_seconds_ += period.seconds();
+  if (cyphal_runtime_ && heartbeat_publish_elapsed_seconds_ >= 1.0) {
     cyphal_runtime_->publish_heartbeat();
-    write_cycles_since_heartbeat_ = 0U;
+    heartbeat_publish_elapsed_seconds_ = 0.0;
   }
 
   if (cyphal_runtime_) {
@@ -538,6 +545,15 @@ hardware_interface::return_type SilverhandRoverSystem::write(
   }
 
   return hardware_interface::return_type::OK;
+}
+
+void SilverhandRoverSystem::stop_motor_commands()
+{
+  std::fill(wheel_velocity_command_.begin(), wheel_velocity_command_.end(), 0.0);
+  if (is_active_ && motor_io_ && cyphal_runtime_ && cyphal_runtime_->is_started()) {
+    motor_io_->publish_commands(wheel_velocity_command_);
+    cyphal_runtime_->spin_once();
+  }
 }
 
 bool SilverhandRoverSystem::heartbeat_check_due()

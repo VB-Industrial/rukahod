@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { useEffect, useRef } from "preact/hooks";
 
 import { attachCameraElement, cameraStates, reconnectCamera, toggleCameraEnabled } from "../camera/cameraStore";
@@ -24,11 +25,11 @@ export function CameraPanel({ cameraId, variant = "card" }: CameraPanelProps) {
       {variant === "hero" ? null : (
         <div className="panel-head camera-panel-head">
           <div>
-            <h2>{state.title}</h2>
+            <h2>{t(state.title)}</h2>
           </div>
           <div className="camera-actions">
             <button className="ghost-button" onClick={() => toggleCameraEnabled(cameraId)} type="button">
-              {state.enabled ? "Выключить" : "Включить"}
+              {state.enabled ? t("Выключить") : t("Включить")}
             </button>
             <button
               className="ghost-button"
@@ -36,8 +37,8 @@ export function CameraPanel({ cameraId, variant = "card" }: CameraPanelProps) {
               onClick={() => reconnectCamera(cameraId)}
               type="button"
             >
-              Переподключить
-            </button>
+              {t("Переподключить")}
+        </button>
           </div>
         </div>
       )}

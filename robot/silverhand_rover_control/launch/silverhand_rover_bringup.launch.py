@@ -5,7 +5,8 @@ import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction, RegisterEventHandler, ExecuteProcess
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -94,42 +95,52 @@ def _create_runtime_actions(
     selected_controllers = controllers_imu_file if imu_enabled else controllers_wheel_file
     controller_manager_name = "/rover_controller_manager"
 
+    # hardware_spawner in Jazzy 4.48 exits 0 even when activation fails.
+    # The ROS CLI reports failure via its exit status, so controllers start only on success.
+    hardware_spawner = ExecuteProcess(
+        cmd=["ros2", "control", "set_hardware_component_state", "SilverhandRoverSystem", "active",
+             "--controller-manager", controller_manager_name],
+        output="screen",
+    )
+    controller_spawners = [
+        Node(package="controller_manager", executable="spawner",
+             arguments=[name, "--controller-manager", controller_manager_name], output="screen")
+        for name in ["joint_state_broadcaster", "rover_base_controller"]
+    ]
+    if imu_enabled:
+        controller_spawners.append(Node(
+            package="controller_manager", executable="spawner",
+            arguments=["imu_sensor_broadcaster", "--controller-manager", controller_manager_name],
+            output="screen",
+        ))
+
     actions = [
+        RegisterEventHandler(OnProcessExit(
+            target_action=hardware_spawner,
+            on_exit=lambda event, _: controller_spawners if event.returncode == 0 else [
+                LogInfo(msg="Rover hardware activation failed; controller manager remains available, controllers are not started.")
+            ],
+        )),
+        Node(package="silverhand_rover_control", executable="cmd_vel_stamper", output="screen"),
         LogInfo(msg=f"silverhand_rover_control: {'IMU + EKF' if imu_enabled else 'wheel odometry'} mode selected ({reason})"),
         Node(
             package="controller_manager",
             executable="ros2_control_node",
             name="rover_controller_manager",
             output="screen",
-            parameters=[robot_description, selected_controllers],
+            parameters=[robot_description, selected_controllers,
+                        {"hardware_components_initial_state": {"inactive": ["SilverhandRoverSystem"]}}],
             remappings=[
                 ("/robot_description", robot_description_topic),
                 ("/controller_manager/robot_description", robot_description_topic),
             ],
         ),
-        Node(
-            package="controller_manager",
-            executable="spawner",
-            arguments=["joint_state_broadcaster", "--controller-manager", controller_manager_name],
-            output="screen",
-        ),
-        Node(
-            package="controller_manager",
-            executable="spawner",
-            arguments=["rover_base_controller", "--controller-manager", controller_manager_name],
-            output="screen",
-        ),
+        hardware_spawner,
     ]
 
     if imu_enabled:
         actions.extend(
             [
-                Node(
-                    package="controller_manager",
-                    executable="spawner",
-                    arguments=["imu_sensor_broadcaster", "--controller-manager", controller_manager_name],
-                    output="screen",
-                ),
                 Node(
                     package="robot_localization",
                     executable="ekf_node",
