@@ -11,7 +11,7 @@ import { forwardKinematicsRuka2, type JointVector } from "../kinematics";
 import { previewTarget, realTarget, resetAllTcpOrientationRates, syncPreviewTcpPoseFromModel, syncRealTcpPoseFromModel } from "../store/appState";
 import { armTelemetryReady, sendStopToRobot as stopArm } from "../transport/robotConnectionStore";
 import { batteryLabel, commandedAngularRadS, commandedLinearMps, headlightsEnabled, motionBlocked, safetyState, setCommand, setInputSource, speedKph, speedPreset, stopCommand, stopModeActive, telemetry } from "../rover/store/appState";
-import { applySpeedPresetFromUi, robotConnectionState, robotConnectionGroups, sendCmdVelToRobot, setStopModeFromUi, toggleHeadlightsFromUi } from "../rover/transport/robotConnectionStore";
+import { resetGyrocompassFromUi, applySpeedPresetFromUi, robotConnectionState, robotConnectionError, robotConnectionGroups, sendCmdVelToRobot, setStopModeFromUi, toggleHeadlightsFromUi } from "../rover/transport/robotConnectionStore";
 
 type Tab = "settings" | "cameras" | "rover" | "arm";
 function stopAll() { resetAllTcpOrientationRates(); setStopModeFromUi(true); stopArm(); }
@@ -75,6 +75,7 @@ function MobileRover() {
     <section className="mobile-rover-status panel">
       <div className="mobile-speed"><strong>{Math.round(speedKph.value)}</strong><span>{t("км/ч")}</span></div>
       <div className="mobile-rover-facts"><span>{t("Курс")} {telemetry.value.headingDeg.toFixed(0)}°</span><span>{telemetry.value.batteryVoltage.toFixed(1)} {t("В")} · {telemetry.value.batteryCurrent.toFixed(1)} A</span></div>
+      <button type="button" className="mobile-gyro-reset" disabled={!telemetry.value.imuValid || robotConnectionState.value !== "connected"} onClick={resetGyrocompassFromUi}>{t("Сброс гирокомпаса")}</button>
       <div className="mobile-command-readout"><span>{t("Линейная")} {commandedLinearMps.value.toFixed(2)} {t("м/с")}</span><span>{t("Угловая")} {commandedAngularRadS.value.toFixed(2)} {t("рад/с")}</span></div>
       <button type="button" className={`mobile-stop ${stopModeActive.value ? "active" : ""}`} aria-pressed={stopModeActive.value} onClick={() => setStopModeFromUi(!stopModeActive.value)}>{t("СТОП")}</button>
       <button type="button" className={`mobile-light ${headlightsEnabled.value ? "active" : ""}`} aria-pressed={headlightsEnabled.value} onClick={toggleHeadlightsFromUi}>{t("Свет")}</button>
@@ -138,6 +139,6 @@ function TouchJoystick({ enabled }: { enabled: boolean }) {
       <span className="joystick-arrow up">▲</span><span className="joystick-arrow down">▼</span><span className="joystick-arrow left">◀</span><span className="joystick-arrow right">▶</span>
       <span className="joystick-knob" style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
     </div>
-    <p>{t(enabled ? "Удерживайте для движения" : motionBlocked.value ? "Выберите скорость и снимите СТОП" : "Ровер не готов")}</p>
+    <p>{t(robotConnectionError.value || (enabled ? "Удерживайте для движения" : motionBlocked.value ? "Выберите скорость и снимите СТОП" : "Ровер не готов"))}</p>
   </section>;
 }

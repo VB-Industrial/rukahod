@@ -10,6 +10,15 @@
   <build_depend>ament_cmake_python</build_depend>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>ruka2_control</exec_depend>
+  <exec_depend>ruka2_moveit_config</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
   <exec_depend>action_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>controller_manager_msgs</exec_depend>
@@ -17,6 +26,8 @@
   <exec_depend>launch</exec_depend>
   <exec_depend>lifecycle_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>moveit_msgs</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
   <exec_depend>python3-websockets</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>silverhand_rover_control</exec_depend>

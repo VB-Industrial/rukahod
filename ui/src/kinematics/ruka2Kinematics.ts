@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { RUKA2_CHAIN, RUKA2_TOOL } from "./ruka2Chain.generated";
-import { RUKA2_JOINT_LIMITS_RAD } from "./ruka2Limits.generated";
+import { DEFAULT_JOINT_LIMITS_DEG } from "./jointLimits";
 import { normalizeQuaternion } from "./quaternion";
 import { selectBestSolution } from "./selectBestSolution";
 import { ARM_JOINT_NAMES, type AnalyticIkCandidate, type AnalyticIkResult, type AnalyticIkSolver, type JointVector, type TcpPose } from "./types";
@@ -16,8 +16,6 @@ const joints = RUKA2_CHAIN.map(({ xyz, rpy, axis }) => ({
   axis: new THREE.Vector3(...axis).normalize(),
 }));
 const toolTransform = transformFromUrdf(RUKA2_TOOL.xyz, RUKA2_TOOL.rpy);
-const lowerLimits = ARM_JOINT_NAMES.map((name) => RUKA2_JOINT_LIMITS_RAD[name].min);
-const upperLimits = ARM_JOINT_NAMES.map((name) => RUKA2_JOINT_LIMITS_RAD[name].max);
 
 function transformFromUrdf(xyz: readonly number[], rpy: readonly number[]): THREE.Matrix4 {
   const orientation = new THREE.Quaternion().setFromEuler(
@@ -87,7 +85,7 @@ function targetAsThree(target: TcpPose): ReturnType<typeof forwardRad> {
 }
 
 function clampToLimits(q: readonly number[]): JointVector {
-  return q.map((value, index) => Math.min(upperLimits[index], Math.max(lowerLimits[index], value))) as JointVector;
+  return q.map((value, index) => Math.min(DEFAULT_JOINT_LIMITS_DEG[ARM_JOINT_NAMES[index]].maxDeg * DEG_TO_RAD, Math.max(DEFAULT_JOINT_LIMITS_DEG[ARM_JOINT_NAMES[index]].minDeg * DEG_TO_RAD, value))) as JointVector;
 }
 
 function solveLinearSystem(matrix: number[][], vector: number[]): number[] | null {

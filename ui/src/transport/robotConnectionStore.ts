@@ -1,3 +1,4 @@
+import { applyCalibratedJointLimits, clampJointsToLimits, type JointVector } from "../kinematics";
 import { computed, signal } from "@preact/signals";
 import {
   activateEstop,
@@ -170,7 +171,7 @@ export function sendLockedTargetToRobot() {
     goal: {
       group_name: "arm",
       joint_names: [...ARM_JOINT_NAMES],
-      positions_rad: currentTarget.joints.map(degToRad),
+      positions_rad: clampJointsToLimits(currentTarget.joints as JointVector).map(degToRad),
     },
   });
   if (!sent) {
@@ -234,6 +235,9 @@ function handleRobotMessage(message: RobotProtocolMessage) {
       pushBackendLog("info", `Handshake ok: ${message.payload.server_name}`);
       return;
     case "pong":
+      return;
+    case "joint_limits":
+      applyCalibratedJointLimits(message.payload.limits);
       return;
     case "joint_state":
       if (message.payload.group_name === "arm") {

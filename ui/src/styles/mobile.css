@@ -14,7 +14,7 @@
 .mobile-battery { font-size: 12px; }
 .mobile-content { min-height: 0; min-width: 0; overflow: hidden; }
 .mobile-rover { height: 100%; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, .72fr) minmax(0, 1.4fr); gap: 8px; }
-.mobile-rover-status { display: grid; grid-template-rows: minmax(0, 1fr) auto auto minmax(38px, .32fr) minmax(38px, .32fr); gap: 6px; padding: 10px; min-height: 0; }
+.mobile-rover-status { display: grid; grid-template-rows: minmax(0, 1fr) auto auto auto minmax(38px, .32fr) minmax(38px, .32fr); gap: 6px; padding: 10px; min-height: 0; }
 .mobile-speed { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; border-radius: 50%; background: radial-gradient(circle, transparent 52%, #8db6bc33 53%, transparent 58%); }
 .mobile-speed strong { font-size: clamp(28px, 8vh, 72px); line-height: 1; }
 .mobile-speed span { font-size: 14px; }
@@ -87,3 +87,6 @@
 .mobile-settings .service-facts > span:nth-child(n+4) { display: none; }
 .mobile-settings .service-error { margin: 0; font-size: 10px; }
 .mobile-arm-actions .kill-switch.inline span { font-size: inherit; }
+
+.mobile-gyro-reset { padding: 5px 8px; min-height: 28px; font-size: 11px; border: 1px solid #354555; border-radius: 8px; color: #e8edf4; background: #19212a; }
+.mobile-gyro-reset:disabled { opacity: .45; }

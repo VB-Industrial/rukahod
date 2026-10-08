@@ -205,7 +205,8 @@ export type RobotToGUIMessage =
   | JointStateMessage
   | PlanningStateMessage
   | ExecutionStateMessage
-  | FaultStateMessage;
+  | FaultStateMessage
+  | MessageEnvelope<"joint_limits", { group_name: "arm"; limits: Record<string, { min_position: number; max_position: number }> }>;
 
 export type RobotProtocolMessage = GUIToRobotMessage | RobotToGUIMessage;
 

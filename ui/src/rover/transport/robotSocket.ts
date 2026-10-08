@@ -7,7 +7,7 @@ import type {
 
 type RobotSocketCallbacks = {
   onOpen?: () => void;
-  onClose?: () => void;
+  onClose?: (event: CloseEvent) => void;
   onError?: (event: Event) => void;
   onMessage?: (message: RobotProtocolMessage) => void;
 };
@@ -33,9 +33,9 @@ export class RobotSocketClient {
         this.callbacks.onOpen?.();
       }
     });
-    this.socket.addEventListener("close", () => {
+    this.socket.addEventListener("close", (event) => {
       if (!this.suppressLifecycleCallbacks) {
-        this.callbacks.onClose?.();
+        this.callbacks.onClose?.(event);
       }
     });
     this.socket.addEventListener("error", (event) => {

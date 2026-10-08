@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import json
+import math
+from pathlib import Path
 import threading
 from collections.abc import Callable
 from typing import Any
@@ -15,7 +18,10 @@ from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
+from diagnostic_msgs.msg import DiagnosticArray
 from trajectory_msgs.msg import JointTrajectoryPoint
+from moveit_msgs.srv import GetMotionPlan
+from moveit_msgs.msg import Constraints, JointConstraint
 
 from ...core.adapter_base import EventSink, RobotAdapter
 from ...core.config import GatewayConfig
@@ -57,6 +63,9 @@ class RosRobotAdapter(RobotAdapter):
 
     def __init__(self, config: GatewayConfig) -> None:
         self._config = config
+        self._joint_limits = json.loads(Path(config.arm_limits_file).read_text())["joint_limits"] if config.arm_limits_file else {}
+        self._hardware_limits = {}
+        self._limits_consistent = not bool(config.arm_limits_file)
         self._event_sink: EventSink | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._node: Node | None = None
@@ -69,6 +78,8 @@ class RosRobotAdapter(RobotAdapter):
         self._arm_positions_by_ros_name: dict[str, float] = {name: 0.0 for name in ROS_ARM_JOINT_NAMES}
         self._arm_velocities_by_ros_name: dict[str, float] = {name: 0.0 for name in ROS_ARM_JOINT_NAMES}
         self._pending_arm_goal: list[float] | None = None
+        self._planner_client = None
+        self._planned_trajectory = None
         self._active_goal_handle: ClientGoalHandle | None = None
         self._estop_active = False
 
@@ -81,9 +92,12 @@ class RosRobotAdapter(RobotAdapter):
             self._rclpy_owned = True
 
         self._node = rclpy.create_node("rukahod_ws_gateway_arm")
+        self._node.create_subscription(DiagnosticArray, "/diagnostics", self._on_hardware_diagnostics, 10)
         self._node.create_subscription(JointState, JOINT_STATE_TOPIC, self._on_joint_state, 10)
+        if self._config.arm_use_moveit:
+            self._planner_client = self._node.create_client(GetMotionPlan, "/plan_kinematic_path")
         self._action_client = ActionClient(self._node, FollowJointTrajectory, ARM_ACTION_NAME)
-        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller")
+        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller", recover_initial=False)
 
         self._spin_thread = threading.Thread(target=self._spin_worker, name="rukahod_ws_gateway_ros_spin", daemon=True)
         self._spin_thread.start()
@@ -134,12 +148,14 @@ class RosRobotAdapter(RobotAdapter):
             self._rclpy_owned = False
 
     async def is_ready(self) -> bool:
-        return self._gate is not None and await self._gate.is_ready()
+        return self._gate is not None and await self._gate.is_ready() and self._limits_consistent
 
     async def on_disconnect(self) -> None:
         await self._cancel_active_goal()
 
     async def on_connect(self) -> None:
+        if self._joint_limits:
+            await self._emit(make_message("joint_limits", {"group_name": "arm", "limits": self._joint_limits}))
         await self._publish_joint_state_arm()
         await self._publish_planning_state("idle", group_name=GROUP_ARM, message="Ready.")
         await self._publish_execution_state("idle", group_name=GROUP_ARM, message="Ready.")
@@ -182,6 +198,10 @@ class RosRobotAdapter(RobotAdapter):
             raise ValueError("goal.joint_names and goal.positions_rad must have the same length.")
 
         mapped_positions = self._map_ws_joint_goal_to_ros(joint_names, positions_rad)
+        for name, position in zip(ROS_ARM_JOINT_NAMES, mapped_positions, strict=True):
+            bound = self._joint_limits.get(name)
+            if not math.isfinite(position) or (bound and not bound["min_position"] <= position <= bound["max_position"]):
+                raise ValueError(f"Goal for {name} is outside calibrated limits")
         with self._state_lock:
             self._pending_arm_goal = mapped_positions
 
@@ -192,8 +212,59 @@ class RosRobotAdapter(RobotAdapter):
         options = self._extract_options_payload(payload)
         as_group_name(options)
         await self._publish_planning_state("planning", group_name=GROUP_ARM, message="Planning started.")
-        await asyncio.sleep(0.05)
+        if self._config.arm_use_moveit:
+            if not await self._plan_moveit():
+                await self._publish_planning_state("failed", group_name=GROUP_ARM, message="MoveIt planning failed.")
+                return
         await self._publish_planning_state("planned", group_name=GROUP_ARM, message="Plan ready.")
+
+    async def _plan_moveit(self) -> bool:
+        self._planned_trajectory = None
+        if self._planner_client is None or not self._planner_client.service_is_ready():
+            return False
+        with self._state_lock:
+            target = list(self._pending_arm_goal) if self._pending_arm_goal is not None else None
+            current = [self._arm_positions_by_ros_name[name] for name in ROS_ARM_JOINT_NAMES]
+        if target is None: return False
+        for i, name in enumerate(ROS_ARM_JOINT_NAMES):
+            b = self._joint_limits.get(name)
+            if b:
+                bounded = min(b["max_position"], max(b["min_position"], current[i]))
+                if abs(bounded - current[i]) > 0.01: return False
+                current[i] = bounded
+        request = GetMotionPlan.Request()
+        plan = request.motion_plan_request
+        plan.group_name = "ruka_arm_controller"
+        plan.allowed_planning_time = 5.0
+        plan.num_planning_attempts = 3
+        plan.max_velocity_scaling_factor = 0.3
+        plan.max_acceleration_scaling_factor = 0.1
+        plan.start_state.joint_state.name = list(ROS_ARM_JOINT_NAMES)
+        plan.start_state.joint_state.position = current
+        plan.start_state.is_diff = True
+        constraints = Constraints()
+        for name, position in zip(ROS_ARM_JOINT_NAMES, target, strict=True):
+            constraints.joint_constraints.append(JointConstraint(joint_name=name, position=position, tolerance_above=0.001, tolerance_below=0.001, weight=1.0))
+        plan.goal_constraints = [constraints]
+        try:
+            response = await asyncio.wait_for(
+                self._await_rclpy_future(self._planner_client.call_async(request)), timeout=20.0)
+        except Exception as exc:
+            LOGGER.warning("MoveIt planning unavailable: %s", exc)
+            return False
+        result = response.motion_plan_response
+        if result.error_code.val != 1:
+            LOGGER.warning("MoveIt planning error: %s", result.error_code.val)
+            return False
+        trajectory = result.trajectory.joint_trajectory
+        if not trajectory.points: return False
+        for point in trajectory.points:
+            for name, position in zip(trajectory.joint_names, point.positions, strict=True):
+                b = self._joint_limits.get(name)
+                if not math.isfinite(position) or (b and not b['min_position'] <= position <= b['max_position']):
+                    return False
+        self._planned_trajectory = trajectory
+        return True
 
     async def _handle_execute(self, payload: dict[str, Any]) -> None:
         group_name = as_group_name(payload)
@@ -227,6 +298,13 @@ class RosRobotAdapter(RobotAdapter):
         point.time_from_start.sec = int(duration_s)
         point.time_from_start.nanosec = int((duration_s - int(duration_s)) * 1_000_000_000)
         goal_message.trajectory.points = [point]
+        if self._config.arm_use_moveit:
+            if not await self._plan_moveit():
+                await self._publish_execution_state("failed", group_name=GROUP_ARM, message="MoveIt could not plan a safe path.")
+                return
+            goal_message.trajectory = self._planned_trajectory
+            last = goal_message.trajectory.points[-1].time_from_start
+            duration_s = last.sec + last.nanosec / 1e9
 
         LOGGER.info("Sending FollowJointTrajectory goal: target=%s duration=%.2fs", _round_list(pending_goal), duration_s)
         await self._publish_execution_state("executing", group_name=GROUP_ARM, message="Trajectory sent.")
@@ -283,6 +361,25 @@ class RosRobotAdapter(RobotAdapter):
                 rclpy.spin_once(self._node, timeout_sec=0.1)
             except ExternalShutdownException:
                 break
+
+    def _on_hardware_diagnostics(self, message: DiagnosticArray) -> None:
+        for status in message.status:
+            if not status.name.startswith("RUKA2/joint_"): continue
+            name = status.name.split("/", 1)[1]
+            if name not in ROS_ARM_JOINT_NAMES: continue
+            values = {v.key: v.value for v in status.values}
+            try:
+                lo, hi = float(values['min_position_rad']), float(values['max_position_rad'])
+            except (KeyError, ValueError): continue
+            if math.isfinite(lo) and math.isfinite(hi) and lo < hi:
+                self._hardware_limits[name] = dict(min_position=lo, max_position=hi)
+        if len(self._hardware_limits) != 6: return
+        # MoveIt and URDF use the startup snapshot: do not open the endpoint
+        # when a subsequent hardware activation reports different bounds.
+        self._limits_consistent = all(
+            name in self._joint_limits and all(abs(b[key] - self._joint_limits[name][key]) < 1e-5
+            for key in ('min_position', 'max_position'))
+            for name, b in self._hardware_limits.items())
 
     def _on_joint_state(self, message: JointState) -> None:
         names = list(message.name)
@@ -458,9 +555,9 @@ class RosRobotAdapter(RobotAdapter):
             try:
                 result = done_future.result()
             except Exception as exc:  # noqa: BLE001
-                loop.call_soon_threadsafe(wrapped.set_exception, exc)
+                loop.call_soon_threadsafe(lambda error=exc: not wrapped.done() and wrapped.set_exception(error))
             else:
-                loop.call_soon_threadsafe(wrapped.set_result, result)
+                loop.call_soon_threadsafe(lambda: not wrapped.done() and wrapped.set_result(result))
 
         future.add_done_callback(_done_callback)
         return await wrapped

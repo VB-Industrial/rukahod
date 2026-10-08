@@ -2,7 +2,7 @@ import { t } from "../i18n";
 import { JOINT_LABELS } from "../app/viewModel";
 import { editingDisabled, interactionMode, previewTarget, setControlMode, setInteractionMode, updateJoint } from "../store/appState";
 import { SliderRow } from "../components/SliderRow";
-import { ARM_JOINT_NAMES, DEFAULT_JOINT_LIMITS_DEG } from "../kinematics";
+import { ARM_JOINT_NAMES, activeJointLimits } from "../kinematics";
 
 export function JointControlPanel() {
   return (
@@ -22,8 +22,8 @@ export function JointControlPanel() {
           <SliderRow
             key={JOINT_LABELS[index]}
             label={JOINT_LABELS[index]}
-            min={DEFAULT_JOINT_LIMITS_DEG[ARM_JOINT_NAMES[index]].minDeg}
-            max={DEFAULT_JOINT_LIMITS_DEG[ARM_JOINT_NAMES[index]].maxDeg}
+            min={activeJointLimits.value[ARM_JOINT_NAMES[index]].minDeg}
+            max={activeJointLimits.value[ARM_JOINT_NAMES[index]].maxDeg}
             step={1}
             unit="°"
             value={value}

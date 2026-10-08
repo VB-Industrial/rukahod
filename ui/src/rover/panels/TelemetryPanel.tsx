@@ -1,3 +1,4 @@
+import { resetGyrocompassFromUi, robotConnectionState } from "../transport/robotConnectionStore";
 import { t, tr } from "../../i18n";
 import { formatSpeed } from "../app/viewModel";
 import { batteryLabel, commandedAngularRadS, commandedLinearMps, maxAngularSpeed, speedKph, speedPresetMaxAngularRadS, telemetry } from "../store/appState";
@@ -43,6 +44,7 @@ export function TelemetryPanel() {
           </div>
 
           <div className="instrument-shell inclinometer-shell">
+            <button type="button" className="gyro-reset-button" disabled={!telemetry.value.imuValid || robotConnectionState.value !== "connected"} onClick={resetGyrocompassFromUi}>{t("Сброс гирокомпаса")}</button>
             <div className="artificial-horizon">
               <div className="mini-dial-ring" />
               <div

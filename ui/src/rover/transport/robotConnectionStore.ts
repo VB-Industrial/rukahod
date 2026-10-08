@@ -102,14 +102,15 @@ export function connectRobot() {
       sendHello();
       startHeartbeat();
     },
-    onClose: () => {
+    onClose: (event) => {
       stopHeartbeat();
       setLinkQuality("offline");
       roverStateAt.value = null;
       robotConnectionGroups.value = [];
       setConnectionState(manuallyDisconnected ? "disconnected" : "error");
       if (!manuallyDisconnected) {
-        robotConnectionError.value = "Соединение закрыто.";
+        robotConnectionError.value = event.code === 1013 && event.reason === "Operator already connected"
+          ? "Пульт занят другим оператором. Закройте другой пульт." : "Соединение закрыто.";
         pushBackendLog("warn", "Соединение с rover gateway закрыто.");
         scheduleReconnect();
       } else {
@@ -432,4 +433,8 @@ export function setHeadlightsFromUi(enabled: boolean): void {
     return;
   }
   pushBackendLog("info", enabled ? "Фары включены." : "Фары выключены.");
+}
+
+export function resetGyrocompassFromUi(): boolean {
+  return client?.isConnected() ? client.send("reset_gyrocompass", { command_id: createCommandId("imu-reset") }) : false;
 }

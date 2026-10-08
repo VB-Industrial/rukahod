@@ -56,6 +56,8 @@ class RoverRosAdapter(RobotAdapter):
         self._last_xy: tuple[float, float] | None = None
         self._roll_deg = 0.0
         self._pitch_deg = 0.0
+        self._imu_reference = (0.0, 0.0, 0.0, 1.0)
+        self._imu_corrected = None
         self._imu_received_at = 0.0
         self._heading_deg_from_imu: float | None = None
 
@@ -142,6 +144,14 @@ class RoverRosAdapter(RobotAdapter):
         payload = as_dict(message.get("payload", {}), field_name="payload")
         legacy_payload = message if isinstance(message, dict) else {}
 
+        if message_type == "reset_gyrocompass":
+            if self._imu_corrected is None or time.monotonic() - self._imu_received_at >= 1.0:
+                await self._emit(make_fault_state("imu_reset_unavailable", "No fresh IMU orientation for reset.", severity="warning", active=False))
+                return
+            self._imu_reference = self._imu_corrected
+            self._roll_deg = self._pitch_deg = self._heading_deg_from_imu = 0.0
+            await self._emit(make_fault_state("imu_reset", "Gyrocompass reference reset.", severity="info", active=False))
+            return
         if message_type == "cmd_vel":
             await self._handle_cmd_vel(payload or legacy_payload)
             return
@@ -290,12 +300,21 @@ class RoverRosAdapter(RobotAdapter):
         if message.orientation_covariance[0] < 0 or not math.isfinite(norm) or norm < 0.5:
             return
         self._imu_received_at = time.monotonic()
-        roll_deg, pitch_deg, heading_deg = _euler_from_quaternion_deg(
-            message.orientation.x,
-            message.orientation.y,
-            message.orientation.z,
-            message.orientation.w,
+        # q_world_sensor = q_world_rover * q_rover_sensor.
+        # Apply the inverse mounting rotation before extracting Euler angles.
+        mount = _quaternion_from_euler_deg(
+            self._config.rover_imu_mount_roll_deg,
+            self._config.rover_imu_mount_pitch_deg,
+            self._config.rover_imu_mount_yaw_deg,
         )
+        corrected = _multiply_quaternions(
+            (q.x / norm, q.y / norm, q.z / norm, q.w / norm),
+            (-mount[0], -mount[1], -mount[2], mount[3]),
+        )
+        self._imu_corrected = corrected
+        ref = self._imu_reference
+        relative = _multiply_quaternions((-ref[0], -ref[1], -ref[2], ref[3]), corrected)
+        roll_deg, pitch_deg, heading_deg = _euler_from_quaternion_deg(*relative)
         self._roll_deg = roll_deg
         self._pitch_deg = pitch_deg
         self._heading_deg_from_imu = heading_deg
@@ -423,3 +442,15 @@ def _euler_from_quaternion_deg(x: float, y: float, z: float, w: float) -> tuple[
 def _log_threadsafe_future(future: "concurrent.futures.Future[Any]") -> None:
     with contextlib.suppress(Exception):
         future.result()
+
+
+def _quaternion_from_euler_deg(roll: float, pitch: float, yaw: float) -> tuple[float, float, float, float]:
+    r, p, y = (math.radians(value) / 2 for value in (roll, pitch, yaw))
+    cr, sr, cp, sp, cy, sy = math.cos(r), math.sin(r), math.cos(p), math.sin(p), math.cos(y), math.sin(y)
+    return (sr*cp*cy-cr*sp*sy, cr*sp*cy+sr*cp*sy, cr*cp*sy-sr*sp*cy, cr*cp*cy+sr*sp*sy)
+
+
+def _multiply_quaternions(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    x, y, z, w = a
+    X, Y, Z, W = b
+    return (w*X+x*W+y*Z-z*Y, w*Y-x*Z+y*W+z*X, w*Z+x*Y-y*X+z*W, w*W-x*X-y*Y-z*Z)

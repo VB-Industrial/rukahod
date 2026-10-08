@@ -9,6 +9,8 @@ function savedLanguage(): Language {
 export const language = signal<Language>(savedLanguage());
 
 const english: Record<string, string> = {
+  "Пульт занят другим оператором. Закройте другой пульт.": "Console is occupied by another operator. Close the other console.",
+  "Сброс гирокомпаса": "Reset gyrocompass",
   "Нет IMU": "No IMU",
   "РукаХод": "RukaRover",
   "Настройки": "Settings",

@@ -529,7 +529,9 @@ export function applyRemoteJointState(groupName: "arm" | "gripper", jointNames: 
 
     realTarget.value = nextReal;
     if (appState.value === "idle") {
-      previewTarget.value = cloneTarget(nextReal);
+      const preview = cloneTarget(nextReal);
+      preview.joints = clampJointsToLimits(asJointVector(preview.joints));
+      previewTarget.value = preview;
     }
     return;
   }

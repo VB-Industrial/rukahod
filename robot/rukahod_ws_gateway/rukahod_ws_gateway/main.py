@@ -11,6 +11,8 @@ from .core.server import run_gateway
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Rukahod robot-side websocket gateway")
+    parser.add_argument("--arm-use-moveit", action="store_true")
+    parser.add_argument("--arm-limits-file", default="")
     parser.add_argument("--domain", choices=("arm", "rover"), default="arm")
     parser.add_argument("--mode", choices=("mock", "ros"), default="mock")
     parser.add_argument("--host", default="0.0.0.0")
@@ -22,6 +24,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rover-cmd-vel-topic", default="/rover_base_controller/cmd_vel_unstamped")
     parser.add_argument("--rover-odom-topic", default="/rover_base_controller/odom")
     parser.add_argument("--rover-imu-topic", default="/imu_sensor_broadcaster/imu")
+    for axis in ("roll", "pitch", "yaw"):
+        parser.add_argument(f"--rover-imu-mount-{axis}-deg", type=float, default=0.0)
     parser.add_argument("--rover-battery-topic", default="/battery_state")
     parser.add_argument("--rover-headlights-service", default="/power_board/set_headlights")
     parser.add_argument("--rover-cmd-vel-max-hz", type=float, default=20.0)
@@ -35,6 +39,8 @@ def main() -> None:
     logging.basicConfig(level=getattr(logging, str(args.log_level).upper(), logging.INFO))
 
     config = GatewayConfig(
+        arm_use_moveit=args.arm_use_moveit,
+        arm_limits_file=args.arm_limits_file,
         domain=args.domain,
         mode=args.mode,
         host=args.host,
@@ -46,6 +52,9 @@ def main() -> None:
         rover_cmd_vel_topic=args.rover_cmd_vel_topic,
         rover_odom_topic=args.rover_odom_topic,
         rover_imu_topic=args.rover_imu_topic,
+        rover_imu_mount_roll_deg=args.rover_imu_mount_roll_deg,
+        rover_imu_mount_pitch_deg=args.rover_imu_mount_pitch_deg,
+        rover_imu_mount_yaw_deg=args.rover_imu_mount_yaw_deg,
         rover_battery_topic=args.rover_battery_topic,
         rover_headlights_service=args.rover_headlights_service,
         rover_cmd_vel_max_hz=args.rover_cmd_vel_max_hz,

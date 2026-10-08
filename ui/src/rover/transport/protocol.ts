@@ -157,7 +157,8 @@ export type GUIToRobotMessage =
   | EstopMessage
   | ResetEstopMessage
   | SetDriveModeMessage
-  | SetHeadlightsMessage;
+  | SetHeadlightsMessage
+  | MessageEnvelope<"reset_gyrocompass", { command_id: string }>;
 
 export type RobotToGUIMessage =
   | HelloAckMessage

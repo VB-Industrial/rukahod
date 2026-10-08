@@ -658,6 +658,8 @@ export function KinematicScene(props: KinematicSceneProps) {
 function applyArmJointValues(robot: any, joints: number[]) {
   JOINT_NAMES.forEach((jointName, index) => {
     const valueDeg = joints[index] ?? 0;
+    // Display feedback faithfully; command limits use the calibrated map.
+    if (robot.joints[jointName]) robot.joints[jointName].ignoreLimits = true;
     robot.setJointValue(jointName, THREE.MathUtils.degToRad(valueDeg));
   });
 }
