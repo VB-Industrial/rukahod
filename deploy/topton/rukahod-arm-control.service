@@ -1,0 +1,23 @@
+[Unit]
+Description=RukaHod arm hardware, controllers and MoveIt
+Wants=network-online.target ethernet-can.service
+After=network-online.target ethernet-can.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosuser
+Group=rosuser
+Environment=ROS_DOMAIN_ID=49
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/usr/bin/python3 /home/rosuser/rukahod/robot/rukahod_ws_gateway/scripts/sync_arm_limits.py --interface vcan1.0 --output /home/rosuser/rukahod/config/calibrated_arm_limits.json
+ExecStart=/bin/bash /home/rosuser/rukahod/deploy/topton/ros-entrypoint.sh ros2 launch rukahod_ws_gateway arm_system_ros.launch.py
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+KillMode=control-group
+TimeoutStartSec=75
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

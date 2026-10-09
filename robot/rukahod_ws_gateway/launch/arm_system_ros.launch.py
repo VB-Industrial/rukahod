@@ -5,7 +5,7 @@ from pathlib import Path
 import xacro
 from ament_index_python.packages import get_package_share_directory as share
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, ExecuteProcess, RegisterEventHandler, LogInfo
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, ExecuteProcess, RegisterEventHandler, LogInfo, Shutdown
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -58,13 +58,13 @@ def setup(context):
     activation = ExecuteProcess(cmd=['ros2','control','set_hardware_component_state','Ruka2System','active','-c','/controller_manager'],output='screen')
     spawners = [Node(package='controller_manager',executable='spawner',arguments=[n,'-c','/controller_manager'],output='screen') for n in ['joint_state_broadcaster','ruka_arm_controller']]
     return [
-        RegisterEventHandler(OnProcessExit(target_action=activation,on_exit=lambda e,_:spawners if e.returncode==0 else [LogInfo(msg='Arm activation failed; controllers not started')])),
+        RegisterEventHandler(OnProcessExit(target_action=activation,on_exit=lambda e,_:spawners if e.returncode==0 else [LogInfo(msg='Arm activation failed; controllers not started'), Shutdown(reason='Arm activation failed')])),
         Node(package='robot_state_publisher',executable='robot_state_publisher',name='arm_robot_state_publisher',parameters=[{'robot_description':description}],remappings=[('/robot_description','/arm/robot_description')]),
-        Node(package='controller_manager',executable='ros2_control_node',parameters=[controllers,{'hardware_components_initial_state':{'inactive':['Ruka2System']}}],remappings=[('/controller_manager/robot_description','/arm/robot_description'),('/robot_description','/arm/robot_description')],output='screen'),
+        Node(package='controller_manager',executable='ros2_control_node',parameters=[controllers,{'hardware_components_initial_state':{'inactive':['Ruka2System']}}],remappings=[('/controller_manager/robot_description','/arm/robot_description'),('/robot_description','/arm/robot_description')],output='screen', on_exit=Shutdown(reason='Arm stack process exited')),
         activation,
         Node(package='tf2_ros', executable='static_transform_publisher', name='rover_to_arm',
              arguments=['--x','0.324','--y','0','--z','-0.076','--frame-id','base_link','--child-frame-id','arm_base_link']),
-        Node(package='moveit_ros_move_group',executable='move_group',parameters=[params],remappings=[('/robot_description','/arm/robot_description')],output='screen'),
+        Node(package='moveit_ros_move_group',executable='move_group',parameters=[params],remappings=[('/robot_description','/arm/robot_description')],output='screen', on_exit=Shutdown(reason='Arm stack process exited')),
     ]
 
 

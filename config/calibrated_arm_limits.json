@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "interface": "vcan1.0",
-  "captured_at": "2026-10-09T10:08:03.461342+00:00",
+  "captured_at": "2026-10-09T12:49:28.273043+00:00",
   "joint_limits": {
     "joint_1": {
       "node_id": 21,
