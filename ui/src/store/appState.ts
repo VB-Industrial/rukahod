@@ -51,6 +51,7 @@ type TargetBundle = {
 const DEFAULT_JOINTS = [...RUKA2_INITIAL_JOINTS_DEG];
 const DEFAULT_TCP = [0, 0, 0, 0, 0, 0];
 const DEFAULT_GRIPPER = 55;
+export const armVelocityScale = signal(1.0);
 const FOLDED_PRESET_JOINTS: JointVector = [...RUKA2_INITIAL_JOINTS_DEG];
 const UNFOLDED_PRESET_JOINTS: JointVector = [0, -90, 90, 0, 0, 0];
 const ORIENTATION_RATE_MAX_DEG_PER_SEC = 90;

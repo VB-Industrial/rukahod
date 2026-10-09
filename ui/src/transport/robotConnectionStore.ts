@@ -2,6 +2,7 @@ import { applyCalibratedJointLimits, clampJointsToLimits, type JointVector } fro
 import { computed, signal } from "@preact/signals";
 import {
   activateEstop,
+  armVelocityScale,
   applyRemoteExecutionState,
   applyRemoteJointState,
   canExecute,
@@ -181,6 +182,7 @@ export function sendLockedTargetToRobot() {
   client.send("execute", {
     command_id: createCommandId("execute"),
     group_name: "arm",
+    velocity_scale: armVelocityScale.value,
   });
   executeTarget();
   return true;

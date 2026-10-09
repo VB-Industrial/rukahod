@@ -1,6 +1,5 @@
 """Use a single calibrated limit snapshot for ros2_control and MoveIt."""
 import json
-import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import xacro
@@ -16,13 +15,6 @@ from moveit_configs_utils import MoveItConfigsBuilder
 def setup(context):
     limits_path = LaunchConfiguration('limits_file').perform(context)
     bounds = json.loads(Path(limits_path).read_text())['joint_limits']
-    expected = {f'joint_{i}' for i in range(1, 7)}
-    if set(bounds) != expected:
-        raise ValueError('Calibration snapshot must contain exactly joints 1–6')
-    for name, bound in bounds.items():
-        lo, hi = bound['min_position'], bound['max_position']
-        if not (math.isfinite(lo) and math.isfinite(hi) and lo < hi):
-            raise ValueError(f'Invalid calibrated bounds for {name}')
     source = Path(share('ruka2_control')) / 'config/ruka2_control.urdf.xacro'
     mappings = dict(use_mock_hardware='false', use_end_effector='false', end_effector_type='none', can_interface='vcan1.0')
     root = ET.fromstring(xacro.process_file(str(source), mappings=mappings).toxml())
@@ -30,12 +22,16 @@ def setup(context):
     for element in root.iter():
         for attribute in ('name', 'link'):
             if element.get(attribute) == 'base_link': element.set(attribute, 'arm_base_link')
+    speed_limit = root.find("ros2_control/hardware/param[@name='maximum_servo_velocity']")
+    if speed_limit is None:
+        raise ValueError('Ruka2System maximum_servo_velocity parameter is missing')
+    speed_limit.text = '0.5'
     for name, b in bounds.items():
         lo, hi = b['min_position'], b['max_position']
         if not lo < hi: raise ValueError(f'Invalid bounds for {name}')
         joint = root.find(f"joint[@name='{name}']")
         limit = joint.find('limit');limit.set('lower',str(lo));limit.set('upper',str(hi))
-        limit.set('velocity','0.1')
+        limit.set('velocity','0.5')
         cmd = root.find(f"ros2_control/joint[@name='{name}']/command_interface[@name='position']")
         for key, value in [('min',lo),('max',hi)]:
             ET.SubElement(cmd,'param',name=key).text=str(value)
@@ -55,7 +51,7 @@ def setup(context):
     params['robot_description_semantic'] = ET.tostring(semantic, encoding='unicode')
     for name,b in bounds.items():
         params['robot_description_planning']['joint_limits'][name].update(
-            has_position_limits=True,min_position=b['min_position'],max_position=b['max_position'],max_velocity=0.1)
+            has_position_limits=True,min_position=b['min_position'],max_position=b['max_position'],max_velocity=0.5)
     params['moveit_simple_controller_manager']['controller_names']=['ruka_arm_controller']
     params['trajectory_execution.allowed_start_tolerance']=0.03
     controllers = str(Path(share('ruka2_control'))/'config/ros2_controllers.yaml')

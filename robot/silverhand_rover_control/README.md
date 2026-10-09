@@ -200,7 +200,7 @@ journalctl -u silverhand-rover-control@mock.service -f
 |---|---|---|
 | Шесть приводов | `vcan2.0` | HB 1–6; команды 3001–3006, feedback 2999–2994 |
 | Плата питания | `vcan2.1` | Узел 9, BatteryState 7993 |
-| Фары | `vcan2.2` | Узел 7 (`org.vbcores.relay_headlight`); subject 3000, uavcan.primitive.array.Integer8.1.0: [реле, фара], [1,1]/[0,0] |
+| Фары | `vcan2.2` | Узел 7; AngularVelocity 1000, float32 1/0 |
 
 Все `direction_multiplier=+1`, включая левую сторону, по текущей конфигурации
 прошивки. Геометрия и motor ID сохранены из SilverHand Rover. Входящие heartbeat
@@ -278,7 +278,3 @@ sudo udevadm trigger --subsystem-match=hidraw
 Для другого пользователя измените группу в правиле. После изменения доступа
 перезапустите аппаратный launch. Тема: `/imu_sensor_broadcaster/imu`.
 Данные публикуются в системе координат датчика; монтажная поправка не настроена.
-
-Контракт света уточнён разработчиком и проверен физически: subject 3000,
-Integer8 array, элемент 0 — реле, элемент 1 — фара. ROS SetBool отправляет
-оба элемента одновременно. Старый контракт AngularVelocity/1000 не используется.

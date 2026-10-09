@@ -54,7 +54,8 @@ class GatewayServer:
                     LOGGER.exception("Readiness check failed for %s", self._config.domain)
                     ready = False
                 if ready and listener is None:
-                    listener = await serve(self._handle_client, self._config.host, self._config.port, ping_interval=None)
+                    listener = await serve(self._handle_client, self._config.host, self._config.port,
+                                           ping_interval=10, ping_timeout=5, close_timeout=2)
                     LOGGER.info("Gateway listening on ws://%s:%s domain=%s mode=%s",
                                 self._config.host, self._config.port, self._config.domain, self._config.mode)
                 elif not ready and listener is not None:
@@ -85,11 +86,12 @@ class GatewayServer:
         stale_clients: list[WebSocketServerProtocol] = []
         for client in tuple(self._clients):
             try:
-                await client.send(encoded)
-            except ConnectionClosed:
+                await asyncio.wait_for(client.send(encoded), timeout=2.0)
+            except (ConnectionClosed, asyncio.TimeoutError):
                 stale_clients.append(client)
         for client in stale_clients:
             self._clients.discard(client)
+            await client.close(code=1001, reason="Telemetry connection stalled")
 
     async def _handle_client(self, websocket: WebSocketServerProtocol) -> None:
         if self._operator is not None:
@@ -100,7 +102,13 @@ class GatewayServer:
         LOGGER.info("Client connected: %s", websocket.remote_address)
         try:
             await self._adapter.on_connect()
-            async for raw_message in websocket:
+            while True:
+                try:
+                    raw_message = await asyncio.wait_for(websocket.recv(), timeout=15.0)
+                except asyncio.TimeoutError:
+                    LOGGER.warning("Client heartbeat timed out: %s", websocket.remote_address)
+                    await websocket.close(code=1001, reason="Client heartbeat timeout")
+                    break
                 try:
                     message = loads_message(raw_message)
                     await self._dispatch_message(websocket, message)
@@ -116,6 +124,8 @@ class GatewayServer:
                             )
                         )
                     )
+        except ConnectionClosed:
+            pass
         finally:
             self._clients.discard(websocket)
             if self._operator is websocket:

@@ -131,6 +131,7 @@ export type ExecuteMessage = MessageEnvelope<
   {
     command_id: CommandId;
     group_name: RobotGroupName;
+    velocity_scale?: number;
   }
 >;
 

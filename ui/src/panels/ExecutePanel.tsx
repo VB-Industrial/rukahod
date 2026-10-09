@@ -1,6 +1,8 @@
 import { t } from "../i18n";
+import { SliderRow } from "../components/SliderRow";
 import {
   canExecute,
+  armVelocityScale,
   canReset,
   canStop,
   estopActive,
@@ -17,9 +19,14 @@ export function ExecutePanel() {
       </div>
 
       <div className="execution-actions">
+        <div className="execution-move-control">
         <button className="execute-action" disabled={!canExecute.value || !armTelemetryReady.value} onClick={sendLockedTargetToRobot} type="button">
           {t("Движение")}
         </button>
+        <SliderRow label="Скорость" min={0.1} max={1.0} step={0.1}
+          unit="×" value={armVelocityScale.value} disabled={false}
+          onInput={(value) => { armVelocityScale.value = value; }} />
+        </div>
         <button className="secondary-action" disabled={!canStop.value} onClick={sendStopToRobot} type="button">
           {t("Стоп")}
         </button>

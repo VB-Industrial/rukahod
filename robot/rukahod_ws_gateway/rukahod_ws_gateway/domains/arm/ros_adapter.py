@@ -97,7 +97,7 @@ class RosRobotAdapter(RobotAdapter):
         if self._config.arm_use_moveit:
             self._planner_client = self._node.create_client(GetMotionPlan, "/plan_kinematic_path")
         self._action_client = ActionClient(self._node, FollowJointTrajectory, ARM_ACTION_NAME)
-        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller", recover_initial=False)
+        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller")
 
         self._spin_thread = threading.Thread(target=self._spin_worker, name="rukahod_ws_gateway_ros_spin", daemon=True)
         self._spin_thread.start()
@@ -213,12 +213,19 @@ class RosRobotAdapter(RobotAdapter):
         as_group_name(options)
         await self._publish_planning_state("planning", group_name=GROUP_ARM, message="Planning started.")
         if self._config.arm_use_moveit:
-            if not await self._plan_moveit():
+            if not await self._plan_moveit(self._velocity_scale(options)):
                 await self._publish_planning_state("failed", group_name=GROUP_ARM, message="MoveIt planning failed.")
                 return
         await self._publish_planning_state("planned", group_name=GROUP_ARM, message="Plan ready.")
 
-    async def _plan_moveit(self) -> bool:
+    @staticmethod
+    def _velocity_scale(payload: dict[str, Any]) -> float:
+        value = payload.get("velocity_scale", 1.0)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0.1 <= value <= 1.0:
+            raise ValueError("velocity_scale must be a number between 0.1 and 1.0")
+        return float(value)
+
+    async def _plan_moveit(self, velocity_scale: float = 1.0) -> bool:
         self._planned_trajectory = None
         if self._planner_client is None or not self._planner_client.service_is_ready():
             return False
@@ -237,7 +244,7 @@ class RosRobotAdapter(RobotAdapter):
         plan.group_name = "ruka_arm_controller"
         plan.allowed_planning_time = 5.0
         plan.num_planning_attempts = 3
-        plan.max_velocity_scaling_factor = 0.3
+        plan.max_velocity_scaling_factor = velocity_scale
         plan.max_acceleration_scaling_factor = 0.1
         plan.start_state.joint_state.name = list(ROS_ARM_JOINT_NAMES)
         plan.start_state.joint_state.position = current
@@ -246,12 +253,7 @@ class RosRobotAdapter(RobotAdapter):
         for name, position in zip(ROS_ARM_JOINT_NAMES, target, strict=True):
             constraints.joint_constraints.append(JointConstraint(joint_name=name, position=position, tolerance_above=0.001, tolerance_below=0.001, weight=1.0))
         plan.goal_constraints = [constraints]
-        try:
-            response = await asyncio.wait_for(
-                self._await_rclpy_future(self._planner_client.call_async(request)), timeout=20.0)
-        except Exception as exc:
-            LOGGER.warning("MoveIt planning unavailable: %s", exc)
-            return False
+        response = await self._await_rclpy_future(self._planner_client.call_async(request))
         result = response.motion_plan_response
         if result.error_code.val != 1:
             LOGGER.warning("MoveIt planning error: %s", result.error_code.val)
@@ -268,6 +270,7 @@ class RosRobotAdapter(RobotAdapter):
 
     async def _handle_execute(self, payload: dict[str, Any]) -> None:
         group_name = as_group_name(payload)
+        velocity_scale = self._velocity_scale(payload)
         if self._estop_active:
             await self._publish_execution_state("estop_active", group_name=group_name, message="Emergency stop active.")
             return
@@ -294,12 +297,12 @@ class RosRobotAdapter(RobotAdapter):
         point = JointTrajectoryPoint()
         point.positions = list(pending_goal)
         point.velocities = [0.0 for _ in pending_goal]
-        duration_s = self._estimate_execution_duration_s(pending_goal)
+        duration_s = self._estimate_execution_duration_s(pending_goal) / velocity_scale
         point.time_from_start.sec = int(duration_s)
         point.time_from_start.nanosec = int((duration_s - int(duration_s)) * 1_000_000_000)
         goal_message.trajectory.points = [point]
         if self._config.arm_use_moveit:
-            if not await self._plan_moveit():
+            if not await self._plan_moveit(velocity_scale):
                 await self._publish_execution_state("failed", group_name=GROUP_ARM, message="MoveIt could not plan a safe path.")
                 return
             goal_message.trajectory = self._planned_trajectory
@@ -555,9 +558,9 @@ class RosRobotAdapter(RobotAdapter):
             try:
                 result = done_future.result()
             except Exception as exc:  # noqa: BLE001
-                loop.call_soon_threadsafe(lambda error=exc: not wrapped.done() and wrapped.set_exception(error))
+                loop.call_soon_threadsafe(wrapped.set_exception, exc)
             else:
-                loop.call_soon_threadsafe(lambda: not wrapped.done() and wrapped.set_result(result))
+                loop.call_soon_threadsafe(wrapped.set_result, result)
 
         future.add_done_callback(_done_callback)
         return await wrapped
