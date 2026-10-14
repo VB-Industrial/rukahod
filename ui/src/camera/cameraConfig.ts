@@ -2,7 +2,8 @@ import type { CameraConfig, CameraId } from "./cameraTypes";
 
 function savedCameraUrl(id: CameraId, fallback: string): string {
   const saved = window.localStorage.getItem(`rukahod.camera.${id}.url`);
-  if (id === "driver" && saved === "http://192.168.20.20:8889/stream3/whep") {
+  if ((id === "driver" && saved === "http://192.168.20.20:8889/stream3/whep") ||
+      (id === "wrist" && saved === "http://192.168.20.20:8889/stream4/whep")) {
     window.localStorage.removeItem(`rukahod.camera.${id}.url`);
     return fallback;
   }
@@ -10,7 +11,7 @@ function savedCameraUrl(id: CameraId, fallback: string): string {
 }
 
 const frontDefault = import.meta.env.VITE_CAMERA_FRONT_WHEP_URL || `http://${window.location.hostname}:8889/cam1/whep`;
-const armDefault = import.meta.env.VITE_CAMERA_ARM_WHEP_URL || "http://192.168.20.20:8889/stream4/whep";
+const armDefault = import.meta.env.VITE_CAMERA_ARM_WHEP_URL || `http://${window.location.hostname}:8889/cam2/whep`;
 
 export const cameraConfigs: CameraConfig[] = [
   {

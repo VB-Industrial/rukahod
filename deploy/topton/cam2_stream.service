@@ -1,0 +1,17 @@
+[Unit]
+Description=RukaHod second USB camera H264 stream cam2
+After=mediamtx.service network-online.target
+Wants=mediamtx.service network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosuser
+Group=rosuser
+SupplementaryGroups=video
+ExecStart=/bin/bash /home/rosuser/rukahod/deploy/topton/cameras/cam2.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

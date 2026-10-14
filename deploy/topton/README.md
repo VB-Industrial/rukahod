@@ -119,3 +119,23 @@ bash ~/rukahod/deploy/topton/ros-entrypoint.sh \
 
 Описание пользовательского транспорта:
 https://fast-dds.docs.eprosima.com/en/2.14.x/fastdds/transport/tcp/tcp.html
+
+### Вторая USB-камера
+
+`cam2_stream.service` публикует H264 1280×720, 25 fps в MediaMTX как `cam2`.
+UI использует `http://<host>:8889/cam2/whep` в окне манипулятора; старый
+сохранённый адрес stream4 автоматически заменяется, пользовательские адреса
+сохраняются. Та же настройка используется мобильной вкладкой камер.
+
+На текущем Топтоне камера подключена к USB-порту 4; её H264-интерфейс:
+`/dev/v4l/by-path/pci-0000:00:14.0-usb-0:4:1.0-video-index2` (сейчас video6).
+Две камеры имеют одинаковый USB serial, поэтому by-id неоднозначен.
+При переносе в другой USB-порт задайте `RUKAHOD_ARM_CAMERA_DEVICE` в override
+службы. Скрипт использует уже установленный H264_UVC_TestAP.
+
+```bash
+sudo cp deploy/topton/cam2_stream.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now cam2_stream
+journalctl -u cam2_stream -n 30 --no-pager
+```
