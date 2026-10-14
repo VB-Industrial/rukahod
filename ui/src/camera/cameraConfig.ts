@@ -16,7 +16,7 @@ const armDefault = import.meta.env.VITE_CAMERA_ARM_WHEP_URL || `http://${window.
 export const cameraConfigs: CameraConfig[] = [
   {
     id: "driver",
-    title: "Фронтальная камера",
+    title: "Камера 2",
     whepUrl: savedCameraUrl("driver", frontDefault),
     enabledByDefault: true,
     optional: false,
@@ -26,7 +26,7 @@ export const cameraConfigs: CameraConfig[] = [
   },
   {
     id: "wrist",
-    title: "Камера на манипуляторе",
+    title: "Камера 1",
     whepUrl: savedCameraUrl("wrist", armDefault),
     enabledByDefault: true,
     optional: false,

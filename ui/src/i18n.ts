@@ -66,6 +66,8 @@ const english: Record<string, string> = {
   "Разложить": "Unfold",
   "Текущее положение": "Current pose",
   "Цель": "Target",
+  "Камера 1": "Camera 1",
+  "Камера 2": "Camera 2",
   "Фронтальная камера": "Front camera",
   "Камера на манипуляторе": "Arm camera",
   "Передняя камера": "Front camera",
