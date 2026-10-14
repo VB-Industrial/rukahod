@@ -45,7 +45,7 @@ export type BackendLogEntry = {
 const STORAGE_KEY = "rukahod.rover_ws_url";
 const DEFAULT_URL = (import.meta.env as { VITE_ROVER_WS_URL?: string }).VITE_ROVER_WS_URL ?? `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:8766`;
 const HEARTBEAT_INTERVAL_MS = 3000;
-const RECONNECT_INTERVAL_MS = 30000;
+const RECONNECT_INTERVAL_MS = 3000;
 
 export const robotConnectionUrl = signal(readInitialUrl());
 export const robotConnectionState = connectionState;
@@ -118,6 +118,7 @@ export function connectRobot() {
       }
     },
     onError: () => {
+      stopHeartbeat();
       setConnectionState("error");
       setLinkQuality("offline");
       roverStateAt.value = null;
@@ -169,7 +170,7 @@ function scheduleReconnect() {
     reconnectTimer = null;
     connectRobot();
   }, RECONNECT_INTERVAL_MS);
-  pushBackendLog("warn", "Повторная попытка подключения через 30 секунд.");
+  pushBackendLog("warn", "Повторная попытка подключения через 3 секунды.");
 }
 
 export function sendCmdVelToRobot(): boolean {

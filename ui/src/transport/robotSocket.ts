@@ -15,6 +15,10 @@ type RobotSocketCallbacks = {
 export class RobotSocketClient {
   private socket: WebSocket | null = null;
   private suppressLifecycleCallbacks = false;
+  private healthTimer: ReturnType<typeof setInterval> | null = null;
+  private lastPongAt = 0;
+  private connectedAt = 0;
+  private pendingPings = new Set<string>();
   private seq: ProtocolSequence = 1;
 
   constructor(
@@ -27,25 +31,44 @@ export class RobotSocketClient {
       return;
     }
 
-    this.socket = new WebSocket(this.url);
-    this.socket.addEventListener("open", () => {
-      if (!this.suppressLifecycleCallbacks) {
+    this.suppressLifecycleCallbacks = false;
+    const socket = new WebSocket(this.url);
+    this.socket = socket;
+    this.connectedAt = Date.now();
+    this.lastPongAt = this.connectedAt;
+    this.pendingPings.clear();
+    this.clearHealthTimer();
+    this.healthTimer = setInterval(() => {
+      if (this.socket !== socket) return;
+      const age = Date.now() - (socket.readyState === WebSocket.CONNECTING ? this.connectedAt : this.lastPongAt);
+      if (age > (socket.readyState === WebSocket.CONNECTING ? 10000 : 12000)) {
+        this.failConnection(socket);
+      }
+    }, 1000);
+    socket.addEventListener("open", () => {
+      if (this.socket === socket && !this.suppressLifecycleCallbacks) {
         this.callbacks.onOpen?.();
       }
     });
-    this.socket.addEventListener("close", () => {
-      if (!this.suppressLifecycleCallbacks) {
+    socket.addEventListener("close", () => {
+      if (this.socket === socket && !this.suppressLifecycleCallbacks) {
+        this.clearHealthTimer();
         this.callbacks.onClose?.();
       }
     });
-    this.socket.addEventListener("error", (event) => {
-      if (!this.suppressLifecycleCallbacks) {
-        this.callbacks.onError?.(event);
+    socket.addEventListener("error", (event) => {
+      if (this.socket === socket && !this.suppressLifecycleCallbacks) {
+        this.failConnection(socket, event);
       }
     });
-    this.socket.addEventListener("message", (event) => {
+    socket.addEventListener("message", (event) => {
+      if (this.socket !== socket || this.suppressLifecycleCallbacks) return;
       try {
         const parsed = JSON.parse(String(event.data)) as RobotProtocolMessage;
+        if (parsed.type === "pong" && this.pendingPings.has(parsed.payload.heartbeat_id)) {
+          this.lastPongAt = Date.now();
+          this.pendingPings.clear();
+        }
         this.callbacks.onMessage?.(parsed);
       } catch {
         // Ignore malformed messages in test mode.
@@ -53,7 +76,22 @@ export class RobotSocketClient {
     });
   }
 
+  private clearHealthTimer() {
+    if (this.healthTimer !== null) clearInterval(this.healthTimer);
+    this.healthTimer = null;
+  }
+
+  private failConnection(socket: WebSocket, event: Event = new Event("error")) {
+    if (this.socket !== socket) return;
+    this.clearHealthTimer();
+    this.socket = null;
+    this.pendingPings.clear();
+    socket.close();
+    if (!this.suppressLifecycleCallbacks) this.callbacks.onError?.(event);
+  }
+
   disconnect() {
+    this.clearHealthTimer();
     if (!this.socket) {
       return;
     }
@@ -81,7 +119,16 @@ export class RobotSocketClient {
       payload,
     } as GUIToRobotMessage;
 
-    this.socket.send(JSON.stringify(message));
+    if (type === "ping") {
+      const heartbeatId = (payload as { heartbeat_id: string }).heartbeat_id;
+      this.pendingPings.add(heartbeatId);
+    }
+    try {
+      this.socket.send(JSON.stringify(message));
+    } catch {
+      this.failConnection(this.socket);
+      return false;
+    }
     return true;
   }
 

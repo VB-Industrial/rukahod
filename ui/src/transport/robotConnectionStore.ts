@@ -28,7 +28,7 @@ export type BackendLogEntry = {
 const STORAGE_KEY = "rukahod.arm_ws_url";
 const DEFAULT_URL = (import.meta.env as { VITE_ARM_WS_URL?: string }).VITE_ARM_WS_URL ?? `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:8765`;
 const HEARTBEAT_INTERVAL_MS = 3000;
-const RECONNECT_INTERVAL_MS = 30000;
+const RECONNECT_INTERVAL_MS = 3000;
 
 export const robotConnectionUrl = signal(readInitialUrl());
 export const robotConnectionState = signal<ConnectionState>("disconnected");
@@ -106,6 +106,7 @@ export function connectRobot() {
       }
     },
     onError: () => {
+      stopHeartbeat();
       robotConnectionState.value = "error";
       robotConnectionError.value = "Ошибка websocket.";
       setConnectionReady(false);
@@ -157,7 +158,7 @@ function scheduleReconnect() {
     reconnectTimer = null;
     connectRobot();
   }, RECONNECT_INTERVAL_MS);
-  pushBackendLog("warn", "Повторная попытка подключения через 30 секунд.");
+  pushBackendLog("warn", "Повторная попытка подключения через 3 секунды.");
 }
 
 export function sendLockedTargetToRobot() {

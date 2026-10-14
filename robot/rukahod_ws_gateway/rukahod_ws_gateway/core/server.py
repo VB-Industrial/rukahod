@@ -42,12 +42,15 @@ class GatewayServer:
         self._adapter = adapter
         self._clients: set[WebSocketServerProtocol] = set()
         self._operator: WebSocketServerProtocol | None = None
+        self._cleanup_failed = False
 
     async def run_forever(self) -> None:
         await self._adapter.start(self.broadcast)
         listener = None
         try:
             while True:
+                if self._cleanup_failed:
+                    raise RuntimeError("Operator cleanup failed; gateway restart required")
                 try:
                     ready = await self._adapter.is_ready()
                 except Exception:
@@ -64,7 +67,6 @@ class GatewayServer:
                         await client.close(code=1012, reason="Controller unavailable")
                     await listener.wait_closed()
                     listener = None
-                    await self._adapter.on_disconnect()
                     LOGGER.warning("Gateway port closed: %s controller unavailable", self._config.domain)
                 await asyncio.sleep(0.5)
         finally:
@@ -129,8 +131,15 @@ class GatewayServer:
         finally:
             self._clients.discard(websocket)
             if self._operator is websocket:
-                self._operator = None
-                await self._adapter.on_disconnect()
+                # Keep the operator slot reserved until old commands are stopped.
+                # A new session must not race the previous session cleanup.
+                try:
+                    await asyncio.wait_for(self._adapter.on_disconnect(), timeout=8.0)
+                except Exception:
+                    self._cleanup_failed = True
+                    LOGGER.exception("Operator disconnect cleanup failed")
+                else:
+                    self._operator = None
             LOGGER.info("Client disconnected: %s", websocket.remote_address)
 
     async def _dispatch_message(self, websocket: WebSocketServerProtocol, message: dict[str, Any]) -> None:
