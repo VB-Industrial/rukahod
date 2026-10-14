@@ -47,6 +47,7 @@ export class RobotSocketClient {
     }, 1000);
     socket.addEventListener("open", () => {
       if (this.socket === socket && !this.suppressLifecycleCallbacks) {
+        this.lastPongAt = Date.now();
         this.callbacks.onOpen?.();
       }
     });
