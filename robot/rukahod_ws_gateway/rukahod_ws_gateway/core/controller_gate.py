@@ -34,6 +34,7 @@ class ControllerGate:
         self._configure = node.create_client(ConfigureController, f"{prefix}/configure_controller")
         self._recover_initial = recover_initial
         self._seen_ready = False
+        self._service_errors: dict[str, str] = {}
         self._last_recovery = 0.0
         self._recovery_task: asyncio.Task[None] | None = None
 
@@ -45,7 +46,9 @@ class ControllerGate:
             self._recovery_task = None
 
     async def _call(self, client: Any, request: Any, timeout: float = 1.0) -> Any | None:
+        service_name = client.srv_name
         if not client.service_is_ready():
+            self._report_service_error(service_name, "not discovered")
             return None
         future = client.call_async(request)
         loop = asyncio.get_running_loop()
@@ -63,10 +66,22 @@ class ControllerGate:
 
         future.add_done_callback(done)
         try:
-            return await asyncio.wait_for(result, timeout)
+            response = await asyncio.wait_for(result, timeout)
+            if self._service_errors.pop(service_name, None) is not None:
+                LOGGER.info("ROS service recovered: %s", service_name)
+            return response
         except Exception as exc:
-            LOGGER.debug("Controller manager service unavailable: %s", exc)
+            self._report_service_error(service_name, f"{type(exc).__name__}: {exc}")
             return None
+        finally:
+            if not future.done():
+                client.remove_pending_request(future)
+                future.cancel()
+
+    def _report_service_error(self, service_name: str, reason: str) -> None:
+        if self._service_errors.get(service_name) != reason:
+            LOGGER.warning("ROS service unavailable: %s (%s)", service_name, reason)
+            self._service_errors[service_name] = reason
 
     async def is_ready(self) -> bool:
         components = await self._call(self._components, ListHardwareComponents.Request())

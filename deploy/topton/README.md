@@ -97,3 +97,25 @@ EtherCAN-службы и сетевые настройки уже установ
 версии её можно обновить `git fetch origin` и `git merge --ff-only origin/main`,
 предварительно сохранив локальный снимок калибровки. Пересборка и перезапуск
 нужны отдельно; обновление исходников не меняет уже запущенные процессы.
+
+### Fast DDS: обмен без shared memory
+
+После сбоя 2026-10-14 ROS discovery продолжал видеть оба controller_manager,
+но обычные клиенты не получали ответы и диагностику. Клиент с UDP-only профилем
+получил ответы обоих менеджеров и активные контроллеры. Перезапуск только WS
+шлюзов с этим профилем восстановил подключение пульта без перезапуска HW.
+Точная причина нарушения SHM пока не установлена; UDP-only применяется как
+проверенный обход сбоя. Настройка задаётся в `ros-entrypoint.sh` через
+`fastdds-udp.xml`; иной профиль задаётся `RUKAHOD_DDS_PROFILE`.
+
+Для ROS-диагностики используйте то же окружение:
+
+```bash
+bash ~/rukahod/deploy/topton/ros-entrypoint.sh \
+  ros2 control list_controllers -c /controller_manager
+bash ~/rukahod/deploy/topton/ros-entrypoint.sh \
+  ros2 control list_controllers -c /rover_controller_manager
+```
+
+Описание пользовательского транспорта:
+https://fast-dds.docs.eprosima.com/en/2.14.x/fastdds/transport/tcp/tcp.html
