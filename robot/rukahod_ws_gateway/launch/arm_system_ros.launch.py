@@ -1,5 +1,6 @@
 """Use a single calibrated limit snapshot for ros2_control and MoveIt."""
 import json
+import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import xacro
@@ -15,6 +16,13 @@ from moveit_configs_utils import MoveItConfigsBuilder
 def setup(context):
     limits_path = LaunchConfiguration('limits_file').perform(context)
     bounds = json.loads(Path(limits_path).read_text())['joint_limits']
+    expected = {f'joint_{i}' for i in range(1, 7)}
+    if set(bounds) != expected:
+        raise ValueError('Calibration snapshot must contain exactly joints 1–6')
+    for name, bound in bounds.items():
+        lo, hi = bound['min_position'], bound['max_position']
+        if not (math.isfinite(lo) and math.isfinite(hi) and lo < hi):
+            raise ValueError(f'Invalid calibrated bounds for {name}')
     source = Path(share('ruka2_control')) / 'config/ruka2_control.urdf.xacro'
     mappings = dict(use_mock_hardware='false', use_end_effector='false', end_effector_type='none', can_interface='vcan1.0')
     root = ET.fromstring(xacro.process_file(str(source), mappings=mappings).toxml())

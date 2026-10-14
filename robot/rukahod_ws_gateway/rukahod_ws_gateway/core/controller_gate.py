@@ -22,7 +22,7 @@ LOGGER = logging.getLogger("rukahod_ws_gateway.controller_gate")
 
 
 class ControllerGate:
-    def __init__(self, node: Node, manager: str, hardware: str, controller: str) -> None:
+    def __init__(self, node: Node, manager: str, hardware: str, controller: str, *, recover_initial: bool = True) -> None:
         prefix = manager.rstrip("/")
         self._hardware = hardware
         self._controller = controller
@@ -32,6 +32,8 @@ class ControllerGate:
         self._switch = node.create_client(SwitchController, f"{prefix}/switch_controller")
         self._load = node.create_client(LoadController, f"{prefix}/load_controller")
         self._configure = node.create_client(ConfigureController, f"{prefix}/configure_controller")
+        self._recover_initial = recover_initial
+        self._seen_ready = False
         self._last_recovery = 0.0
         self._recovery_task: asyncio.Task[None] | None = None
 
@@ -76,7 +78,12 @@ class ControllerGate:
         hardware_active = hardware is not None and hardware.state.id == State.PRIMARY_STATE_ACTIVE
         controller_active = controller is not None and controller.state == "active"
         if hardware_active and controller_active:
+            self._seen_ready = True
             return True
+        # The arm launch owns initial activation/spawning. Recover only after
+        # observing its successful startup, avoiding concurrent lifecycle calls.
+        if not self._recover_initial and not self._seen_ready:
+            return False
 
         # Retry lifecycle transitions independently for each domain. Hardware activation
         # itself validates Cyphal heartbeat; an absent device cannot open the WS port.

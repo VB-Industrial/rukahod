@@ -97,7 +97,7 @@ class RosRobotAdapter(RobotAdapter):
         if self._config.arm_use_moveit:
             self._planner_client = self._node.create_client(GetMotionPlan, "/plan_kinematic_path")
         self._action_client = ActionClient(self._node, FollowJointTrajectory, ARM_ACTION_NAME)
-        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller")
+        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller", recover_initial=False)
 
         self._spin_thread = threading.Thread(target=self._spin_worker, name="rukahod_ws_gateway_ros_spin", daemon=True)
         self._spin_thread.start()
@@ -253,7 +253,12 @@ class RosRobotAdapter(RobotAdapter):
         for name, position in zip(ROS_ARM_JOINT_NAMES, target, strict=True):
             constraints.joint_constraints.append(JointConstraint(joint_name=name, position=position, tolerance_above=0.001, tolerance_below=0.001, weight=1.0))
         plan.goal_constraints = [constraints]
-        response = await self._await_rclpy_future(self._planner_client.call_async(request))
+        try:
+            response = await asyncio.wait_for(
+                self._await_rclpy_future(self._planner_client.call_async(request)), timeout=20.0)
+        except Exception as exc:
+            LOGGER.warning("MoveIt planning unavailable: %s", exc)
+            return False
         result = response.motion_plan_response
         if result.error_code.val != 1:
             LOGGER.warning("MoveIt planning error: %s", result.error_code.val)
@@ -558,9 +563,9 @@ class RosRobotAdapter(RobotAdapter):
             try:
                 result = done_future.result()
             except Exception as exc:  # noqa: BLE001
-                loop.call_soon_threadsafe(wrapped.set_exception, exc)
+                loop.call_soon_threadsafe(lambda error=exc: not wrapped.done() and wrapped.set_exception(error))
             else:
-                loop.call_soon_threadsafe(wrapped.set_result, result)
+                loop.call_soon_threadsafe(lambda: not wrapped.done() and wrapped.set_result(result))
 
         future.add_done_callback(_done_callback)
         return await wrapped

@@ -83,7 +83,9 @@ journalctl -u rukahod-rover-control -u rukahod-rover-gateway -n 100 --no-pager
 
 ### 4. Запуск руки с актуальными лимитами
 
-Рука пока запускается вручную. Сначала прочитайте текущую калибровку:
+Рука поддерживает автозапуск через `rukahod-arm-control` и `rukahod-arm-gateway`;
+инструкция — [ARM_AUTOSTART.md](deploy/topton/ARM_AUTOSTART.md).
+Далее приведён альтернативный ручной запуск: сначала остановите обе службы руки. Сначала прочитайте текущую калибровку:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
