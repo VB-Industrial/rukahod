@@ -148,7 +148,11 @@ class RosRobotAdapter(RobotAdapter):
             self._rclpy_owned = False
 
     async def is_ready(self) -> bool:
-        return self._gate is not None and await self._gate.is_ready() and self._limits_consistent
+        hardware_ready = self._gate is not None and await self._gate.is_ready() and self._limits_consistent
+        execution_ready = self._action_client is not None and self._action_client.server_is_ready()
+        planning_ready = not self._config.arm_use_moveit or (
+            self._planner_client is not None and self._planner_client.service_is_ready())
+        return hardware_ready and execution_ready and planning_ready
 
     async def on_disconnect(self) -> None:
         await self._cancel_active_goal()
