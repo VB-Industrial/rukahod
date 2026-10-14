@@ -103,6 +103,8 @@ export function connectRobot() {
       startHeartbeat();
     },
     onClose: (event) => {
+      stopCommand();
+      setRoverReady(false);
       stopHeartbeat();
       setLinkQuality("offline");
       roverStateAt.value = null;
@@ -118,6 +120,8 @@ export function connectRobot() {
       }
     },
     onError: () => {
+      stopCommand();
+      setRoverReady(false);
       stopHeartbeat();
       setConnectionState("error");
       setLinkQuality("offline");
@@ -135,6 +139,8 @@ export function connectRobot() {
 }
 
 export function disconnectRobot(manual = true) {
+  stopCommand();
+  setRoverReady(false);
   manuallyDisconnected = manual;
   stopHeartbeat();
   clearReconnectTimer();
