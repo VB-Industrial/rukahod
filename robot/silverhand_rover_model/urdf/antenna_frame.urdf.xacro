@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Width is the outside width of the 20 mm frame. Height is from the
+       mounting surface to the top of its crossbar. Antennas extend above
+       the crossbar by antenna_length - antenna_inset. All dimensions in m. -->
+  <xacro:macro name="rukahod_antenna_frame"
+    params="parent xyz width height antenna_radius antenna_length:=0.30 antenna_inset:=0.05 prefix:=antenna_frame">
+    <xacro:property name="profile" value="0.020"/>
+    <xacro:macro name="frame_box" params="name xyz size">
+      <link name="${prefix}_${name}">
+        <visual><origin xyz="${xyz}"/><geometry><box size="${size}"/></geometry><material name="${prefix}_aluminium"><color rgba="0.72 0.74 0.76 1"/></material></visual>
+        <collision><origin xyz="${xyz}"/><geometry><box size="${size}"/></geometry></collision>
+      </link>
+      <joint name="${prefix}_${name}_fixed" type="fixed"><parent link="${prefix}_mount"/><child link="${prefix}_${name}"/></joint>
+    </xacro:macro>
+    <link name="${prefix}_mount"/>
+    <joint name="${prefix}_mount_fixed" type="fixed"><parent link="${parent}"/><child link="${prefix}_mount"/><origin xyz="${xyz}"/></joint>
+    <xacro:frame_box name="left_post" xyz="0 ${(width-profile)/2} ${(height-profile)/2}" size="${profile} ${profile} ${height-profile}"/>
+    <xacro:frame_box name="right_post" xyz="0 ${-(width-profile)/2} ${(height-profile)/2}" size="${profile} ${profile} ${height-profile}"/>
+    <xacro:frame_box name="crossbar" xyz="0 0 ${height-profile/2}" size="${profile} ${width} ${profile}"/>
+    <!-- Antenna brackets place the cylinders outside the posts. -->
+    <xacro:macro name="frame_antenna" params="side sign">
+      <link name="${prefix}_${side}_antenna">
+        <visual><origin xyz="0 ${sign*(width/2+antenna_radius)} ${height-antenna_inset+antenna_length/2}"/><geometry><cylinder radius="${antenna_radius}" length="${antenna_length}"/></geometry><material name="${prefix}_black"><color rgba="0.06 0.06 0.06 1"/></material></visual>
+        <collision><origin xyz="0 ${sign*(width/2+antenna_radius)} ${height-antenna_inset+antenna_length/2}"/><geometry><cylinder radius="${antenna_radius}" length="${antenna_length}"/></geometry></collision>
+      </link>
+      <joint name="${prefix}_${side}_antenna_fixed" type="fixed"><parent link="${prefix}_mount"/><child link="${prefix}_${side}_antenna"/></joint>
+    </xacro:macro>
+    <xacro:frame_antenna side="left" sign="1"/>
+    <xacro:frame_antenna side="right" sign="-1"/>
+  </xacro:macro>
+</robot>

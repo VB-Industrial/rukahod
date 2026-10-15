@@ -1,0 +1,12 @@
+# All dimensions in metres. Width/height/diameter confirmed 2026-10-15.
+# Posts are 125 mm behind the main rocker axis (base_link X=0.100).
+enabled: true
+width: 0.490
+height: 0.380
+antenna_length: 0.300
+antenna_inset: 0.050
+antenna_radius: 0.0125
+mount_x: -0.025
+mount_y: 0.0
+# Top surface of Body.stl in the current base_link frame.
+mount_z: 0.161

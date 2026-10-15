@@ -43,6 +43,17 @@ def arm_description() -> ET.Element:
 def main() -> None:
     rover = ET.parse(ROVER_URDF).getroot()
     arm = arm_description()
+    antenna_macro = ROOT / "robot/silverhand_rover_model/urdf/antenna_frame_mount.urdf.xacro"
+    antenna_wrapper = f'''<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="antenna">
+      <xacro:include filename="{antenna_macro}"/>
+      <xacro:rukahod_configured_antenna_frame parent="base_link"/>
+    </robot>'''
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".xacro") as source:
+        source.write(antenna_wrapper)
+        source.flush()
+        result = subprocess.run(["bash", "-c", 'source /opt/ros/jazzy/setup.bash && xacro "$1"', "bash", source.name], text=True, capture_output=True, check=True)
+    for element in ET.fromstring(result.stdout):
+        rover.append(element)
     limits = []
     chain = []
     for index in range(1, 7):

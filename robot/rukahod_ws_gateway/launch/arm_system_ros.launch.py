@@ -1,6 +1,7 @@
 """Use a single calibrated limit snapshot for ros2_control and MoveIt."""
 import json
 import math
+from itertools import combinations
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import xacro
@@ -43,6 +44,18 @@ def setup(context):
         cmd = root.find(f"ros2_control/joint[@name='{name}']/command_interface[@name='position']")
         for key, value in [('min',lo),('max',hi)]:
             ET.SubElement(cmd,'param',name=key).text=str(value)
+    antenna_macro = Path(share('silverhand_rover_model')) / 'urdf/antenna_frame_mount.urdf.xacro'
+    antenna_wrapper = f'''<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="antenna">
+      <xacro:include filename="{antenna_macro}"/>
+      <xacro:rukahod_configured_antenna_frame parent="arm_base_link" prefix="arm_antenna_frame"
+        offset_x="-0.324" offset_y="0" offset_z="0.076"/>
+    </robot>'''
+    antenna_doc = xacro.parse(antenna_wrapper)
+    xacro.process_doc(antenna_doc)
+    antenna = ET.fromstring(antenna_doc.toxml())
+    antenna_collision_links = [link.get('name') for link in antenna.findall('link') if link.find('collision') is not None]
+    for element in antenna:
+        root.append(element)
     description = ET.tostring(root,encoding='unicode')
     cfg = (MoveItConfigsBuilder('ruka2',package_name='ruka2_moveit_config')
            .robot_description(mappings=mappings)
@@ -56,6 +69,9 @@ def setup(context):
     for element in semantic.iter():
         for key, value in list(element.attrib.items()):
             if value == 'base_link': element.set(key, 'arm_base_link')
+    # The frame is one rigid assembly; retain every arm-to-frame collision pair.
+    for left, right in combinations(antenna_collision_links, 2):
+        ET.SubElement(semantic, 'disable_collisions', link1=left, link2=right, reason='Adjacent')
     params['robot_description_semantic'] = ET.tostring(semantic, encoding='unicode')
     for name,b in bounds.items():
         params['robot_description_planning']['joint_limits'][name].update(

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="antenna_frame.urdf.xacro"/>
+  <xacro:property name="rukahod_antenna_config" value="${xacro.load_yaml('../config/antenna_frame.yaml')}" lazy_eval="false"/>
+  <xacro:macro name="rukahod_configured_antenna_frame"
+    params="parent prefix:=antenna_frame offset_x:=0 offset_y:=0 offset_z:=0">
+    <xacro:if value="${rukahod_antenna_config['enabled']}">
+      <xacro:rukahod_antenna_frame parent="${parent}" prefix="${prefix}"
+        xyz="${rukahod_antenna_config['mount_x']+offset_x} ${rukahod_antenna_config['mount_y']+offset_y} ${rukahod_antenna_config['mount_z']+offset_z}"
+        width="${rukahod_antenna_config['width']}" height="${rukahod_antenna_config['height']}"
+        antenna_radius="${rukahod_antenna_config['antenna_radius']}"
+        antenna_length="${rukahod_antenna_config['antenna_length']}" antenna_inset="${rukahod_antenna_config['antenna_inset']}"/>
+    </xacro:if>
+  </xacro:macro>
+</robot>

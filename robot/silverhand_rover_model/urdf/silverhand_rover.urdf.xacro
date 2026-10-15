@@ -445,4 +445,6 @@
     rear_wheel_visual_xyz="${right_rear_wheel_visual_xyz}"
     rear_wheel_visual_rpy="${right_rear_wheel_visual_rpy}"/>
 
+  <xacro:include filename="antenna_frame_mount.urdf.xacro"/>
+  <xacro:rukahod_configured_antenna_frame parent="base_link"/>
 </robot>

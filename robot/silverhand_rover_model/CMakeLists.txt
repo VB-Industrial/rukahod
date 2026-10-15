@@ -4,7 +4,7 @@ project(silverhand_rover_model)
 find_package(ament_cmake REQUIRED)
 
 install(
-  DIRECTORY launch meshes rviz urdf
+  DIRECTORY launch meshes rviz urdf config
   DESTINATION share/${PROJECT_NAME}
 )
 
