@@ -30,3 +30,46 @@ for relative in ('cyphal/cyphal.cpp', 'src/cyphal.cpp'):
         data = data.replace(marker, marker + reset, 1)
     path.write_bytes(data)
 print('Cyphal shutdown flags patched (idempotent)')
+# This library permits one provider at a time. Release its allocator on teardown
+# so a later configure() doesn't flag legitimate reconstruction as a duplicate.
+for relative in ('cyphal/providers/provider.cpp', 'src/cyphal.cpp'):
+    path = root / relative
+    if not path.exists():
+        continue
+    data = path.read_bytes()
+    newline = b'\r\n' if b'\r\n' in data else b'\n'
+    old = b'AbstractCANProvider::~AbstractCANProvider() = default;'
+    new = newline.join((b'AbstractCANProvider::~AbstractCANProvider() {',
+                        b'    clear_queue();', b'    _alloc_ptr.reset();', b'}'))
+    if old not in data and new not in data:
+        raise RuntimeError(f'Unexpected provider destructor: {path}')
+    path.write_bytes(data.replace(old, new))
+# The Linux provider also owns its SocketCAN descriptor.
+for relative in ('cyphal/providers/LinuxCAN.h',):
+    path = root / relative
+    if not path.exists():
+        continue
+    data = path.read_bytes()
+    marker = b'    uint32_t len_to_dlc(size_t len) override;'
+    declaration = b'    ~LinuxCAN() override;'
+    if declaration not in data:
+        if marker not in data:
+            raise RuntimeError(f'Unexpected LinuxCAN declaration: {path}')
+        newline = b'\r\n' if b'\r\n' in data else b'\n'
+        data = data.replace(marker, declaration + newline + marker, 1)
+    path.write_bytes(data)
+for relative in ('cyphal/providers/LinuxCAN.cpp',):
+    path = root / relative
+    if not path.exists():
+        continue
+    data = path.read_bytes()
+    marker = b'int LinuxCAN::write_frame('
+    if b'LinuxCAN::~LinuxCAN()' not in data:
+        if marker not in data:
+            raise RuntimeError(f'Unexpected LinuxCAN implementation: {path}')
+        newline = b'\r\n' if b'\r\n' in data else b'\n'
+        destructor = newline.join((b'LinuxCAN::~LinuxCAN() {',
+            b'    if (socketcan_handler >= 0) ::close(socketcan_handler);', b'}', b'', b''))
+        data = data.replace(marker, destructor + marker, 1)
+    path.write_bytes(data)
+print('Cyphal allocator and SocketCAN cleanup patched (idempotent)')
