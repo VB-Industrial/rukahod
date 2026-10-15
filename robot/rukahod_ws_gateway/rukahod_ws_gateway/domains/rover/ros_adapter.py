@@ -45,6 +45,7 @@ class RoverRosAdapter(RobotAdapter):
         self._arm_power_client: Client | None = None
         self._arm_power_commanded: bool | None = None
         self._relay_state_at = 0.0
+        self._last_power_status: tuple[bool, bool | None] | None = None
         self._gate: ControllerGate | None = None
         self._spin_thread: threading.Thread | None = None
         self._status_task: asyncio.Task[None] | None = None
@@ -275,6 +276,13 @@ class RoverRosAdapter(RobotAdapter):
 
     async def _publish_arm_power_state(self) -> None:
         available = self._power_available()
+        status = (available, self._arm_power_commanded)
+        if status != self._last_power_status:
+            LOGGER.info("Arm power control available=%s commanded_enabled=%s service_ready=%s relay_age_s=%.2f",
+                        available, self._arm_power_commanded,
+                        self._arm_power_client is not None and self._arm_power_client.service_is_ready(),
+                        time.monotonic() - self._relay_state_at)
+            self._last_power_status = status
         await self._emit(make_message("arm_power_state", {
             "available": available,
             "commanded_enabled": self._arm_power_commanded if available else None,
