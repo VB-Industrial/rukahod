@@ -97,7 +97,7 @@ class RosRobotAdapter(RobotAdapter):
         if self._config.arm_use_moveit:
             self._planner_client = self._node.create_client(GetMotionPlan, "/plan_kinematic_path")
         self._action_client = ActionClient(self._node, FollowJointTrajectory, ARM_ACTION_NAME)
-        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller", recover_initial=False)
+        self._gate = ControllerGate(self._node, "/controller_manager", "Ruka2System", "ruka_arm_controller", recover_initial=False, auxiliary_controllers=("joint_state_broadcaster",))
 
         self._spin_thread = threading.Thread(target=self._spin_worker, name="rukahod_ws_gateway_ros_spin", daemon=True)
         self._spin_thread.start()

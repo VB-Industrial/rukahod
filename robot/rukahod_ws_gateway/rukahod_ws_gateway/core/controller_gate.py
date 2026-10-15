@@ -22,10 +22,11 @@ LOGGER = logging.getLogger("rukahod_ws_gateway.controller_gate")
 
 
 class ControllerGate:
-    def __init__(self, node: Node, manager: str, hardware: str, controller: str, *, recover_initial: bool = True) -> None:
+    def __init__(self, node: Node, manager: str, hardware: str, controller: str, *, recover_initial: bool = True, auxiliary_controllers: tuple[str, ...] = ()) -> None:
         prefix = manager.rstrip("/")
         self._hardware = hardware
         self._controller = controller
+        self._auxiliary_controllers = auxiliary_controllers
         self._components = node.create_client(ListHardwareComponents, f"{prefix}/list_hardware_components")
         self._controllers = node.create_client(ListControllers, f"{prefix}/list_controllers")
         self._set_hardware = node.create_client(SetHardwareComponentState, f"{prefix}/set_hardware_component_state")
@@ -92,7 +93,9 @@ class ControllerGate:
         controller = next((item for item in controllers.controller if item.name == self._controller), None)
         hardware_active = hardware is not None and hardware.state.id == State.PRIMARY_STATE_ACTIVE
         controller_active = controller is not None and controller.state == "active"
-        if hardware_active and controller_active:
+        auxiliary_active = all(any(item.name == name and item.state == "active" for item in controllers.controller)
+                               for name in self._auxiliary_controllers)
+        if hardware_active and controller_active and auxiliary_active:
             self._seen_ready = True
             return True
         # The arm launch owns initial activation/spawning. Recover only after
@@ -143,9 +146,21 @@ class ControllerGate:
             response = await self._call(self._configure, request, timeout=3.0)
             if response is None or not response.ok:
                 return
-        if not controller_active:
+        missing_auxiliary = []
+        if self._auxiliary_controllers:
+            states = await self._call(self._controllers, ListControllers.Request())
+            if states is None:
+                return
+            for name in self._auxiliary_controllers:
+                item = next((item for item in states.controller if item.name == name), None)
+                if item is None or item.state == "unconfigured":
+                    LOGGER.warning("Cannot recover missing/unconfigured auxiliary controller: %s", name)
+                    return
+                if item.state != "active":
+                    missing_auxiliary.append(name)
+        if not controller_active or missing_auxiliary:
             request = SwitchController.Request()
-            request.activate_controllers = [self._controller]
+            request.activate_controllers = ([] if controller_active else [self._controller]) + missing_auxiliary
             request.strictness = SwitchController.Request.STRICT
             request.activate_asap = True
             request.timeout.sec = 5
