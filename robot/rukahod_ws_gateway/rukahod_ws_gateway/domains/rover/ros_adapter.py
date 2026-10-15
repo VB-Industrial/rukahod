@@ -14,9 +14,11 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.client import Client
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy
 from sensor_msgs.msg import BatteryState, Imu
 from std_srvs.srv import SetBool
+from std_msgs.msg import Int8MultiArray
+from action_msgs.srv import CancelGoal
 
 from ...core.adapter_base import EventSink, RobotAdapter
 from ...core.config import GatewayConfig
@@ -39,6 +41,10 @@ class RoverRosAdapter(RobotAdapter):
         self._node: Node | None = None
         self._cmd_vel_publisher: Any = None
         self._headlights_client: Client | None = None
+        self._arm_cancel_client: Client | None = None
+        self._arm_power_client: Client | None = None
+        self._arm_power_commanded: bool | None = None
+        self._relay_state_at = 0.0
         self._gate: ControllerGate | None = None
         self._spin_thread: threading.Thread | None = None
         self._status_task: asyncio.Task[None] | None = None
@@ -75,6 +81,10 @@ class RoverRosAdapter(RobotAdapter):
         self._node.create_subscription(Odometry, self._config.rover_odom_topic, self._on_odometry, 10)
         self._node.create_subscription(Imu, self._config.rover_imu_topic, self._on_imu, qos_profile_sensor_data)
         self._node.create_subscription(BatteryState, self._config.rover_battery_topic, self._on_battery_state, 10)
+        self._arm_cancel_client = self._node.create_client(CancelGoal, "/ruka_arm_controller/follow_joint_trajectory/_action/cancel_goal")
+        self._arm_power_client = self._node.create_client(SetBool, "/power_board/set_arm_power")
+        self._node.create_subscription(Int8MultiArray, "/power_board/relay_commanded_state",
+            self._on_relay_state, QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self._headlights_client = self._node.create_client(SetBool, self._config.rover_headlights_service)
 
         self._spin_thread = threading.Thread(target=self._spin_worker, name="rukahod_ws_gateway_rover_spin", daemon=True)
@@ -124,6 +134,8 @@ class RoverRosAdapter(RobotAdapter):
 
         self._cmd_vel_publisher = None
         self._headlights_client = None
+        self._arm_power_client = None
+        self._arm_cancel_client = None
         self._gate = None
 
         if self._rclpy_owned and rclpy.ok():
@@ -166,6 +178,9 @@ class RoverRosAdapter(RobotAdapter):
             return
         if message_type == "set_drive_mode":
             await self._handle_set_drive_mode(payload)
+            return
+        if message_type == "set_arm_power":
+            await self._handle_set_arm_power(payload)
             return
         if message_type == "set_headlights":
             await self._handle_set_headlights(payload)
@@ -246,6 +261,73 @@ class RoverRosAdapter(RobotAdapter):
         self._headlights_enabled = enabled
         await self._emit(make_fault_state("headlights_changed", response.message or ("Headlights enabled" if enabled else "Headlights disabled"), severity="info", active=False))
         await self._publish_rover_state()
+
+    def _on_relay_state(self, message: Int8MultiArray) -> None:
+        if len(message.data) != 2: return
+        arm, lights = message.data
+        self._arm_power_commanded = arm == 0 if arm in (0, 1) else None
+        if lights in (0, 1): self._headlights_enabled = lights == 1
+        self._relay_state_at = time.monotonic()
+
+    def _power_available(self) -> bool:
+        return (self._arm_power_client is not None and self._arm_power_client.service_is_ready()
+                and self._arm_power_commanded is not None and time.monotonic() - self._relay_state_at < 3.0)
+
+    async def _publish_arm_power_state(self) -> None:
+        available = self._power_available()
+        await self._emit(make_message("arm_power_state", {
+            "available": available,
+            "commanded_enabled": self._arm_power_commanded if available else None,
+        }))
+
+    async def _cancel_arm_before_power(self) -> bool:
+        # Discard an old trajectory before power can be restored. No new motion goal.
+        client = self._arm_cancel_client
+        if client is None or not client.service_is_ready():
+            return True
+        future = None
+        try:
+            future = client.call_async(CancelGoal.Request())  # zero ID/stamp = cancel all
+            response = await asyncio.wait_for(self._await_rclpy_future(future), 1.0)
+            return response.return_code != CancelGoal.Response.ERROR_REJECTED
+        except Exception:
+            LOGGER.warning("Could not cancel arm trajectory before switching power")
+            return False
+        finally:
+            if future is not None and not future.done():
+                client.remove_pending_request(future)
+                future.cancel()
+
+    async def _handle_set_arm_power(self, payload: dict[str, Any]) -> None:
+        enabled = payload.get("enabled")
+        command_id = payload.get("command_id")
+        if not isinstance(enabled, bool) or not isinstance(command_id, str) or not command_id:
+            raise ValueError("set_arm_power requires enabled:boolean and command_id:string")
+        success = False
+        message = "Arm power control unavailable"
+        if self._power_available():
+            cancelled = await self._cancel_arm_before_power()
+            if enabled and not cancelled:
+                await self._emit(make_message("arm_power_result", {
+                    "command_id": command_id, "success": False, "enabled": enabled,
+                    "message": "Cannot restore power while trajectory cancellation is unconfirmed",
+                }))
+                return
+            request = SetBool.Request(); request.data = enabled
+            future = None
+            try:
+                future = self._arm_power_client.call_async(request)
+                response = await asyncio.wait_for(self._await_rclpy_future(future), 3.0)
+                success, message = response.success, response.message
+            except Exception as exc:
+                message = f"Arm power request failed: {type(exc).__name__}"
+                if future is not None and not future.done():
+                    self._arm_power_client.remove_pending_request(future)
+                    future.cancel()
+        await self._emit(make_message("arm_power_result", {
+            "command_id": command_id, "success": success, "enabled": enabled, "message": message,
+        }))
+        await self._publish_arm_power_state()
 
     async def _status_loop(self) -> None:
         while True:
@@ -345,6 +427,7 @@ class RoverRosAdapter(RobotAdapter):
         self._cmd_vel_publisher.publish(twist)
 
     async def _publish_rover_state(self) -> None:
+        await self._publish_arm_power_state()
         if not self._should_emit_message("rover_state"):
             return
         await self._emit(
@@ -406,9 +489,9 @@ class RoverRosAdapter(RobotAdapter):
             try:
                 result = done_future.result()
             except Exception as exc:  # noqa: BLE001
-                loop.call_soon_threadsafe(wrapped.set_exception, exc)
+                loop.call_soon_threadsafe(lambda error=exc: not wrapped.done() and wrapped.set_exception(error))
             else:
-                loop.call_soon_threadsafe(wrapped.set_result, result)
+                loop.call_soon_threadsafe(lambda: not wrapped.done() and wrapped.set_result(result))
 
         future.add_done_callback(_done_callback)
         return await wrapped

@@ -1,9 +1,10 @@
-.arm-power-control { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.arm-power-status { flex: 1 1 140px; font-size: 12px; color: var(--muted, #a7b2c2); }
-.arm-power-status--on { color: #97d26b; }
-.arm-power-button, .arm-power-confirm button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--border, #354555); border-radius: 12px; background: #263724; color: var(--text, #e8edf4); font: inherit; cursor: pointer; }
-.arm-power-button--off { background: #442725; }
+.arm-power-control { display: flex; flex-direction: column; gap: 3px; min-width: 0; width: 100%; }
+.arm-power-buttons { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.arm-power-status { font-size: 10px; line-height: 1.1; color: var(--muted, #a7b2c2); text-align: center; }
+.arm-power-button { min-height: 40px; min-width: 0; padding: 6px; border: 1px solid #658f50; border-radius: 12px; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.arm-power-button--on { background: linear-gradient(#66984e, #3d692d); }
+.arm-power-button--off { background: linear-gradient(#ec554b, #a72722); border-color: #e8756e; }
 .arm-power-control button:disabled { opacity: .45; cursor: default; }
 .arm-power-control button:focus-visible { outline: 2px solid var(--accent, #e5b54c); outline-offset: 2px; }
-.arm-power-confirm { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.arm-power-confirm span { flex: 1 1 100%; font-size: 12px; }
+.arm-power-control [role="alert"] { font-size: 10px; color: #f59d94; }
+.arm-power-panel { padding: 8px; }

@@ -48,6 +48,7 @@ class MockRoverAdapter(RobotAdapter):
         self._config = config
         self._event_sink: EventSink | None = None
         self._state = RoverMockState(last_command_monotonic=time.monotonic())
+        self._arm_power = False
         self._ticker_task: asyncio.Task[None] | None = None
 
     async def start(self, event_sink: EventSink) -> None:
@@ -88,6 +89,13 @@ class MockRoverAdapter(RobotAdapter):
             return
         if message_type == "set_drive_mode":
             await self._handle_set_drive_mode(payload)
+            return
+        if message_type == "set_arm_power":
+            enabled = payload.get("enabled")
+            if not isinstance(enabled, bool): raise ValueError("enabled must be boolean")
+            self._arm_power = enabled
+            await self._emit(make_message("arm_power_result", {"command_id": payload.get("command_id"), "success": True, "enabled": enabled, "message": "Mock relay command applied"}))
+            await self._publish_rover_state()
             return
         if message_type == "set_headlights":
             await self._handle_set_headlights(payload)
@@ -211,6 +219,7 @@ class MockRoverAdapter(RobotAdapter):
         )
 
     async def _publish_rover_state(self) -> None:
+        await self._emit(make_message("arm_power_state", {"available": True, "commanded_enabled": self._arm_power}))
         await self._emit(
             make_rover_state(
                 mode=self._state.drive_mode,

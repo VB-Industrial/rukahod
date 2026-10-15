@@ -158,9 +158,12 @@ export type GUIToRobotMessage =
   | ResetEstopMessage
   | SetDriveModeMessage
   | SetHeadlightsMessage
+  | MessageEnvelope<"set_arm_power", { command_id: string; enabled: boolean }>
   | MessageEnvelope<"reset_gyrocompass", { command_id: string }>;
 
 export type RobotToGUIMessage =
+  | MessageEnvelope<"arm_power_state", { commanded_enabled: boolean | null; available: boolean }>
+  | MessageEnvelope<"arm_power_result", { command_id: string; success: boolean; enabled: boolean; message: string }>
   | HelloAckMessage
   | PongMessage
   | OdometryMessage

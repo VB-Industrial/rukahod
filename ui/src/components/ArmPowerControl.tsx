@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { t } from "../i18n";
 import "./ArmPowerControl.css";
 
 export type ArmPowerState = "on" | "off" | "unknown";
 export type ArmPowerControlProps = {
-  /** Relay telemetry, never inferred from the arm WebSocket connection. */
+  /** Last commanded relay state, never inferred from the arm WebSocket connection. */
   state: ArmPowerState;
   /** Availability of power control through the rover endpoint. */
   available: boolean;
@@ -12,22 +12,20 @@ export type ArmPowerControlProps = {
   onSetPower: (enabled: boolean) => Promise<void>;
 };
 
-/** Prepared for placement in either console; not mounted on a page yet. */
+/** Shared power controls for desktop and mobile consoles. */
 export function ArmPowerControl({ state, available, onSetPower }: ArmPowerControlProps) {
   const [pending, setPending] = useState(false);
-  const [confirmOff, setConfirmOff] = useState(false);
   const [failed, setFailed] = useState(false);
   const inFlight = useRef(false);
-  const disabled = !available || state === "unknown" || pending;
+  const disabled = !available || pending;
 
-  useEffect(() => { setConfirmOff(false); }, [available, state]);
 
   async function requestPower(enabled: boolean) {
     if (disabled || inFlight.current) return;
+    if (!enabled && !window.confirm(t("Отключение питания снимет удержание руки."))) return;
     inFlight.current = true;
     setPending(true);
     setFailed(false);
-    setConfirmOff(false);
     try {
       await onSetPower(enabled);
       // The callback doesn't prove physical power: display telemetry only.
@@ -39,23 +37,17 @@ export function ArmPowerControl({ state, available, onSetPower }: ArmPowerContro
     }
   }
 
-  const label = pending ? "Переключение питания…" : state === "on" ? "Выключить руку" : state === "off" ? "Включить руку" : "Питание руки";
   return (
     <div className="arm-power-control" role="group" aria-label={t("Питание руки")} aria-busy={pending}>
-      <span className={`arm-power-status arm-power-status--${available ? state : "unknown"}`} role="status">
-        {t(!available ? "Управление питанием недоступно" : state === "unknown" ? "Состояние питания неизвестно" : state === "on" ? "Питание руки включено" : "Питание руки выключено")}
+      <div className="arm-power-buttons">
+        <button type="button" className="arm-power-button arm-power-button--off"
+          disabled={disabled} onClick={() => void requestPower(false)}>{t("Выкл")}</button>
+        <button type="button" className="arm-power-button arm-power-button--on"
+          disabled={disabled} onClick={() => void requestPower(true)}>{t("Вкл")}</button>
+      </div>
+      <span className="arm-power-status" role="status" title={t("Показана команда реле, аппаратной обратной связи нет")}>
+        {t(pending ? "Переключение питания…" : !available ? "Управление питанием недоступно" : state === "unknown" ? "Состояние питания неизвестно" : state === "on" ? "Задано: Вкл" : "Задано: Выкл")}
       </span>
-      <button type="button" className={`arm-power-button${state === "on" ? " arm-power-button--off" : ""}`}
-        disabled={disabled || confirmOff} onClick={() => state === "on" ? setConfirmOff(true) : void requestPower(true)}>
-        {t(label)}
-      </button>
-      {confirmOff && available && state === "on" && (
-        <div className="arm-power-confirm">
-          <span>{t("Отключение питания снимет удержание руки.")}</span>
-          <button type="button" disabled={pending} onClick={() => void requestPower(false)}>{t("Подтвердить отключение")}</button>
-          <button type="button" onClick={() => setConfirmOff(false)}>{t("Отмена")}</button>
-        </div>
-      )}
       {failed && <span role="alert">{t("Не удалось переключить питание руки")}</span>}
     </div>
   );

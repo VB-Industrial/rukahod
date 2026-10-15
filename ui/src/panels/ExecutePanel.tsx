@@ -1,14 +1,14 @@
 import { t } from "../i18n";
+import { PosePresetPanel } from "./PosePresetPanel";
 import { SliderRow } from "../components/SliderRow";
 import {
   canExecute,
   armVelocityScale,
   canReset,
   canStop,
-  estopActive,
   resetState,
 } from "../store/appState";
-import { sendEstopToRobot, sendLockedTargetToRobot, sendResetEstopToRobot, sendStopToRobot } from "../transport/robotConnectionStore";
+import { sendLockedTargetToRobot, sendStopToRobot } from "../transport/robotConnectionStore";
 import { armTelemetryReady } from "../transport/robotConnectionStore";
 
 export function ExecutePanel() {
@@ -35,19 +35,7 @@ export function ExecutePanel() {
         </button>
       </div>
 
-      <div className="estop-actions">
-        <button className="kill-switch inline" onClick={sendEstopToRobot} type="button">
-          <span>{t("Авария")}</span>
-        </button>
-        <button
-          className="secondary-action danger-outline"
-          disabled={!estopActive.value}
-          onClick={sendResetEstopToRobot}
-          type="button"
-        >
-          {t("Сброс Аварии")}
-        </button>
-      </div>
+      <PosePresetPanel embedded />
     </section>
   );
 }

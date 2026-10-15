@@ -9,6 +9,11 @@ function savedLanguage(): Language {
 export const language = signal<Language>(savedLanguage());
 
 const english: Record<string, string> = {
+  "Выкл": "Off",
+  "Вкл": "On",
+  "Задано: Вкл": "Commanded: On",
+  "Задано: Выкл": "Commanded: Off",
+  "Показана команда реле, аппаратной обратной связи нет": "Relay command shown; no hardware readback",
   "Питание руки": "Arm power",
   "Включить руку": "Power arm on",
   "Выключить руку": "Power arm off",

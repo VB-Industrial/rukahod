@@ -15,6 +15,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(std_msgs REQUIRED)
 
 find_library(HIDAPI_HIDRAW_LIB hidapi-hidraw)
 set(SDL2_LIB_TARGET "")
@@ -88,6 +89,7 @@ ament_target_dependencies(
   libcxxcanard
   rclcpp
   std_srvs
+  std_msgs
 )
 
 add_executable(cmd_vel_stamper src/cmd_vel_stamper.cpp)

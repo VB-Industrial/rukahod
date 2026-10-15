@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { language, setLanguage, t } from "../i18n";
 import { ExecutePanel } from "../panels/ExecutePanel";
-import { PosePresetPanel } from "../panels/PosePresetPanel";
+import { ArmPowerPanel } from "../panels/ArmPowerPanel";
 import { JointControlPanel } from "../panels/JointControlPanel";
 import { TcpControlPanel } from "../panels/TcpControlPanel";
 import { ServicePanel } from "../panels/ServicePanel";
@@ -54,7 +54,7 @@ export function MobileConsole() {
           <button type="button" aria-pressed={armMode === "joint"} onClick={() => { resetAllTcpOrientationRates(); setArmMode("joint"); }}>{t("По звеньям")}</button>
           <button type="button" aria-pressed={armMode === "tcp"} onClick={() => setArmMode("tcp")}>{t("Рабочая точка")}</button>
         </div>
-        <div className="mobile-arm-actions"><ExecutePanel /><PosePresetPanel /></div>
+        <div className="mobile-arm-actions"><ExecutePanel /><ArmPowerPanel /></div>
         <div className="mobile-arm-sliders">{armMode === "joint" ? <JointControlPanel /> : <TcpControlPanel />}</div>
       </div> : null}
       {tab === "settings" ? <div className="mobile-settings"><ServicePanel /><button type="button" className="mobile-stop" onClick={stopAll}>{t("СТОП")}</button></div> : null}

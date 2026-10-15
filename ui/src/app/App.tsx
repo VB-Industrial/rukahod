@@ -8,7 +8,7 @@ import { ExecutePanel } from "../panels/ExecutePanel";
 import { HeaderBar } from "../panels/HeaderBar";
 import { JointControlPanel } from "../panels/JointControlPanel";
 import { KinematicViewportPanel } from "../panels/KinematicViewportPanel";
-import { PosePresetPanel } from "../panels/PosePresetPanel";
+import { ArmPowerPanel } from "../panels/ArmPowerPanel";
 import { ServicePanel } from "../panels/ServicePanel";
 import { TcpControlPanel } from "../panels/TcpControlPanel";
 import { ActionPresetPanel } from "../rover/panels/ActionPresetPanel";
@@ -100,7 +100,7 @@ export function App() {
           <KinematicViewportPanel />
           <div className="action-stack">
             <ExecutePanel />
-            <PosePresetPanel />
+            <ArmPowerPanel />
           </div>
           <TcpControlPanel />
           </section>

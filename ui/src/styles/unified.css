@@ -669,3 +669,6 @@ body {
 .inclinometer-shell { position: relative; }
 .gyro-reset-button { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 3px 8px; font-size: clamp(8px, .65vw, 12px); line-height: 1.1; white-space: nowrap; border: 1px solid var(--border, #354555); border-radius: 8px; background: #19212a; color: #e8edf4; }
 .gyro-reset-button:disabled { opacity: .45; }
+
+.arm-controls .execute-panel .pose-preset-panel.embedded { padding: 0; margin-top: 8px; border: 0; background: none; }
+.arm-controls .arm-power-panel .arm-power-button { min-height: 42px; font-size: clamp(11px, .8vw, 15px); }

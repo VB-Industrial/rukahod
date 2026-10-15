@@ -40,7 +40,7 @@
 .mobile-arm { height: 100%; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr); grid-template-rows: 36px minmax(0, 1fr); gap: 6px; }
 .mobile-subtabs { grid-column: 1 / -1; display: flex; gap: 6px; min-width: 0; }
 .mobile-subtabs button { border: 1px solid var(--border-soft); border-radius: 8px; background: var(--panel-3); color: var(--text); padding: 4px 18px; min-height: 32px; }
-.mobile-arm-actions { display: grid; grid-template-rows: minmax(0, 1fr) minmax(42px, .26fr); gap: 6px; min-height: 0; }
+.mobile-arm-actions { display: grid; grid-template-rows: minmax(0, 1fr) minmax(62px, .26fr); gap: 6px; min-height: 0; }
 .mobile-arm-actions .execute-panel { display: grid; grid-template-rows: minmax(0, 1fr) minmax(0, .5fr); gap: 6px; padding: 8px; min-height: 0; }
 .mobile-arm-actions .execute-panel .panel-head { display: none; }
 .mobile-arm-actions .execution-actions { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, .8fr); gap: 6px; }
@@ -90,3 +90,9 @@
 
 .mobile-gyro-reset { padding: 5px 8px; min-height: 28px; font-size: 11px; border: 1px solid #354555; border-radius: 8px; color: #e8edf4; background: #19212a; }
 .mobile-gyro-reset:disabled { opacity: .45; }
+
+.mobile-arm-actions .arm-power-panel { padding: 6px; min-height: 0; }
+.mobile-arm-actions .execute-panel .pose-preset-panel.embedded { padding: 0; border: 0; background: none; }
+.mobile-arm-actions .arm-power-control { height: 100%; }
+.mobile-arm-actions .arm-power-buttons { flex: 1; min-height: 0; }
+.mobile-arm-actions .arm-power-status { font-size: 9px; }

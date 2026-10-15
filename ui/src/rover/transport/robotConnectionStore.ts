@@ -57,6 +57,35 @@ export const robotBackendStatus = signal("");
 export const robotBackendLog = signal<BackendLogEntry[]>([]);
 export const robotConnectionError = signal("");
 
+export const armPowerCommanded = signal<boolean | null>(null);
+export const armPowerAvailable = signal(false);
+let powerRequest: { id: string; resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> } | null = null;
+
+function clearArmPowerConnection() {
+  armPowerAvailable.value = false;
+  armPowerCommanded.value = null;
+  if (powerRequest) {
+    const request = powerRequest;
+    powerRequest = null;
+    clearTimeout(request.timer);
+    request.reject(new Error("Power connection lost"));
+  }
+}
+
+export function setArmPowerFromUi(enabled: boolean): Promise<void> {
+  if (!armPowerAvailable.value || !client?.isConnected() || powerRequest) return Promise.reject(new Error("Power control unavailable"));
+  return new Promise<void>((resolve, reject) => {
+    const id = createCommandId("arm-power");
+    const timer = setTimeout(() => {
+      if (powerRequest?.id !== id) return;
+      powerRequest = null;
+      reject(new Error("Power command acknowledgment timed out"));
+    }, 6000);
+    powerRequest = { id, resolve, reject, timer };
+    if (!client?.send("set_arm_power", { command_id: id, enabled })) clearArmPowerConnection();
+  });
+}
+
 let client: RobotSocketClient | null = null;
 let heartbeatTimer = 0;
 let reconnectTimer: ReturnType<typeof window.setTimeout> | null = null;
@@ -103,6 +132,7 @@ export function connectRobot() {
       startHeartbeat();
     },
     onClose: (event) => {
+      clearArmPowerConnection();
       stopCommand();
       setRoverReady(false);
       stopHeartbeat();
@@ -120,6 +150,7 @@ export function connectRobot() {
       }
     },
     onError: () => {
+      clearArmPowerConnection();
       stopCommand();
       setRoverReady(false);
       stopHeartbeat();
@@ -139,6 +170,7 @@ export function connectRobot() {
 }
 
 export function disconnectRobot(manual = true) {
+  clearArmPowerConnection();
   stopCommand();
   setRoverReady(false);
   manuallyDisconnected = manual;
@@ -252,6 +284,19 @@ function handleRobotMessage(message: RobotProtocolMessage) {
   setLinkQuality("strong");
 
   switch (message.type) {
+    case "arm_power_state":
+      armPowerAvailable.value = message.payload.available;
+      armPowerCommanded.value = message.payload.commanded_enabled;
+      return;
+    case "arm_power_result": {
+      if (powerRequest?.id !== message.payload.command_id) return;
+      const request = powerRequest;
+      powerRequest = null;
+      clearTimeout(request.timer);
+      if (message.payload.success) request.resolve();
+      else request.reject(new Error(message.payload.message));
+      return;
+    }
     case "hello_ack":
       robotConnectionServerName.value = message.payload.server_name;
       robotConnectionGroups.value = message.payload.groups;

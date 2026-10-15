@@ -12,6 +12,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "silverhand_rover_control/cyphal/runtime.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_msgs/msg/int8_multi_array.hpp"
 #include "uavcan/primitive/array/Integer8_1_0.h"
 
 TYPE_ALIAS(LightsMsg, uavcan_primitive_array_Integer8_1_0)
@@ -40,6 +41,9 @@ public:
 
     state_file_ = get_parameter("relay_state_file").as_string();
     load_state();
+    relay_state_publisher_ = create_publisher<std_msgs::msg::Int8MultiArray>(
+      "/power_board/relay_commanded_state", rclcpp::QoS(1).transient_local());
+    publish_state();
     arm_power_service_ = create_service<std_srvs::srv::SetBool>(
       "/power_board/set_arm_power",
       [this](const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
@@ -90,6 +94,7 @@ private:
       if (observed == node_->outputs_) return;
       node_->outputs_ = observed;
       node_->save_state(observed);
+      node_->publish_state();
       RCLCPP_INFO(node_->get_logger(), "Observed relay command [%d, %d]", arm, lights);
     }
   private:
@@ -130,6 +135,13 @@ private:
     }
   }
 
+  void publish_state()
+  {
+    std_msgs::msg::Int8MultiArray message;
+    message.data = {static_cast<std::int8_t>(outputs_[0]), static_cast<std::int8_t>(outputs_[1])};
+    relay_state_publisher_->publish(message);
+  }
+
   void shutdown_runtime()
   {
     if (timer_) {
@@ -155,6 +167,7 @@ private:
     ++loop_counter_;
     if (loop_counter_ >= kHeartbeatLoopCount) {
       runtime_->publish_heartbeat();
+      publish_state();
       loop_counter_ = 0U;
     }
   }
@@ -195,6 +208,7 @@ private:
       runtime_->interface()->send_msg<LightsMsg>(&message, headlights_port_id_, &headlights_transfer_id_);
     }
     outputs_ = next;
+    publish_state();
     response->success = true;
     response->message = "Relay command sent [" + std::to_string(next[0]) + ", " + std::to_string(next[1]) + "] (no hardware readback)";
     RCLCPP_INFO(get_logger(), "%s", response->message.c_str());
@@ -206,6 +220,7 @@ private:
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr arm_power_service_;
   std::array<int, 2> outputs_{-1, -1};
   std::string state_file_;
+  rclcpp::Publisher<std_msgs::msg::Int8MultiArray>::SharedPtr relay_state_publisher_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr headlights_service_;
   std::uint16_t headlights_port_id_{3000};
   bool use_mock_{false};

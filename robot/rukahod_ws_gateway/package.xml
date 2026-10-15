@@ -33,6 +33,7 @@
   <exec_depend>silverhand_rover_control</exec_depend>
   <exec_depend>silverhand_rover_model</exec_depend>
   <exec_depend>std_srvs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>
 
   <export>
