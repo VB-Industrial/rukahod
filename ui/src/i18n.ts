@@ -9,6 +9,18 @@ function savedLanguage(): Language {
 export const language = signal<Language>(savedLanguage());
 
 const english: Record<string, string> = {
+  "Питание руки": "Arm power",
+  "Включить руку": "Power arm on",
+  "Выключить руку": "Power arm off",
+  "Переключение питания…": "Switching power…",
+  "Управление питанием недоступно": "Power control unavailable",
+  "Состояние питания неизвестно": "Power state unknown",
+  "Питание руки включено": "Arm power is on",
+  "Питание руки выключено": "Arm power is off",
+  "Отключение питания снимет удержание руки.": "Powering off releases the arm holding torque.",
+  "Подтвердить отключение": "Confirm power off",
+  "Отмена": "Cancel",
+  "Не удалось переключить питание руки": "Failed to switch arm power",
   "Пульт занят другим оператором. Закройте другой пульт.": "Console is occupied by another operator. Close the other console.",
   "Сброс гирокомпаса": "Reset gyrocompass",
   "Нет IMU": "No IMU",
