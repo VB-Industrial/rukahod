@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import URDFLoader from "urdf-loader";
+import { SYSTEM_MODEL_URL } from "./systemModel.generated";
 import type { OrientationQuaternion } from "../kinematics";
 
 const JOINT_NAMES = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"];
@@ -434,8 +435,8 @@ export function KinematicScene(props: KinematicSceneProps) {
     resize();
 
     Promise.all([
-      loader.loadAsync("/assets/system/urdf/rukahod_system.urdf"),
-      loader.loadAsync("/assets/system/urdf/rukahod_system.urdf"),
+      loader.loadAsync(SYSTEM_MODEL_URL),
+      loader.loadAsync(SYSTEM_MODEL_URL),
     ])
       .then(([realSystem, targetSystem]) => {
         if (disposed) {
