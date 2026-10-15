@@ -24,3 +24,6 @@ headlights_node:
     node_id: 111
     queue_len: 1000
     headlights_port_id: 3000
+
+    # Last commanded outputs; startup never replays them to hardware.
+    relay_state_file: /home/rosuser/.local/state/rukahod/relay_outputs.state
