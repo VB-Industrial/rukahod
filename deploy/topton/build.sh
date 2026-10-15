@@ -8,6 +8,7 @@ if [[ ! -f "$cyphal_src/package.xml" ]]; then
   echo "Set RUKAHOD_CYPHAL_SRC to the existing ROS libcxxcanard package directory." >&2
   exit 1
 fi
+python3 "$repo_dir/deploy/topton/patch-cyphal-shutdown.py" "$cyphal_src"
 source /opt/ros/jazzy/setup.bash
 unset FASTRTPS_DEFAULT_PROFILES_FILE ROS_DISCOVERY_SERVER
 git -C "$repo_dir" submodule update --init robot/RUKA2
