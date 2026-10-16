@@ -8,5 +8,6 @@ antenna_inset: 0.050
 antenna_radius: 0.0125
 mount_x: -0.025
 mount_y: 0.0
-# Top surface of Body.stl in the current base_link frame.
-mount_z: 0.161
+# Main lid surface: STL Y=226 mm, transformed by body visual Z=-162 mm.
+# The STL maximum (323 mm) is a raised bracket, not the lid.
+mount_z: 0.064
