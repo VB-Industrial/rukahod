@@ -101,7 +101,18 @@ class ControllerGate:
         # The arm launch owns initial activation/spawning. Recover only after
         # observing its successful startup, avoiding concurrent lifecycle calls.
         if not self._recover_initial and not self._seen_ready:
-            return False
+            # A startup transport failure can happen after controller loading but
+            # before the first complete ready state. Configured inactive controllers
+            # plus non-active hardware mean launch activation has already failed;
+            # allow recovery without racing normal startup/spawning.
+            configured_after_failure = (
+                not hardware_active
+                and controller is not None and controller.state == "inactive"
+                and all(any(item.name == name and item.state == "inactive" for item in controllers.controller)
+                        for name in self._auxiliary_controllers)
+            )
+            if not configured_after_failure:
+                return False
 
         # Retry lifecycle transitions independently for each domain. Hardware activation
         # itself validates Cyphal heartbeat; an absent device cannot open the WS port.
