@@ -152,3 +152,20 @@ journalctl -u cam2_stream -n 30 --no-pager
 SocketCAN-дескриптор. Регрессионный тест `tests/cyphal_shutdown.cpp` проверяет
 100 последовательных созданий/удалений транспорта на `vcan_relaytest`,
 отсутствие ошибок библиотеки и утечки дескрипторов.
+
+### Подсветка кнопки PowerBoard
+
+`rukahod-powerboard-led.service` отправляет через Cyphal сервис 172 узлу 9
+на `vcan2.1` зелёный цвет при активных HW и контроллере ровера, работающих
+gateway ровера и HTTP UI. В остальных случаях — жёлтый. Рука может быть
+выключена. Индикация обновляется каждые 10 секунд, чтобы восстановиться
+после перезапуска PowerBoard; отсутствие ответа приводит к повтору команды.
+
+На Топтоне используются `/opt/yakut/bin/python` и типы из
+`/opt/cyphal/generated`. Установка службы:
+
+```sh
+sudo cp ~/rukahod/deploy/topton/rukahod-powerboard-led.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now rukahod-powerboard-led.service
+```

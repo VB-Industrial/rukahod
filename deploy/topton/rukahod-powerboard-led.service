@@ -1,0 +1,20 @@
+[Unit]
+Description=RukaHod PowerBoard ready indication
+Wants=ethernet-can-rover.service rukahod-rover-control.service rukahod-rover-gateway.service rukahod-ui.service
+After=ethernet-can-rover.service rukahod-rover-control.service rukahod-rover-gateway.service rukahod-ui.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosuser
+Group=rosuser
+Environment=ROS_DOMAIN_ID=49
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/bin/bash /home/rosuser/rukahod/deploy/topton/ros-entrypoint.sh /opt/yakut/bin/python /home/rosuser/rukahod/deploy/topton/powerboard-ready-led.py
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
