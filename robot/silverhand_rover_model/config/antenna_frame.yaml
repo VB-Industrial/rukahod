@@ -1,8 +1,8 @@
-# All dimensions in metres. Width/height/diameter confirmed 2026-10-15.
+# All dimensions in metres. Crossbar height corrected 2026-10-16.
 # Posts are 125 mm behind the main rocker axis (base_link X=0.100).
 enabled: true
 width: 0.490
-height: 0.380
+height: 0.350
 antenna_length: 0.300
 antenna_inset: 0.050
 antenna_radius: 0.0125
