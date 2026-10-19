@@ -78,7 +78,7 @@ class RoverRosAdapter(RobotAdapter):
 
         self._node = rclpy.create_node("rukahod_ws_gateway_rover")
         self._cmd_vel_publisher = self._node.create_publisher(Twist, self._config.rover_cmd_vel_topic, 10)
-        self._gate = ControllerGate(self._node, "/rover_controller_manager", "SilverhandRoverSystem", "rover_base_controller")
+        self._gate = ControllerGate(self._node, "/rover_controller_manager", "SilverhandRoverSystem", "rover_base_controller", recover_initial=False, auxiliary_controllers=("joint_state_broadcaster",))
         self._node.create_subscription(Odometry, self._config.rover_odom_topic, self._on_odometry, 10)
         self._node.create_subscription(Imu, self._config.rover_imu_topic, self._on_imu, qos_profile_sensor_data)
         self._node.create_subscription(BatteryState, self._config.rover_battery_topic, self._on_battery_state, 10)
